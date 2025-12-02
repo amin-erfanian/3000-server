@@ -1,0 +1,402 @@
+{
+    "product": {
+        "_id": "507f1f77bcf86cd799439101",
+        "titleFa": "گوشی موبایل اپل مدل iPhone 15 Pro Max دو سیم‌کارت ظرفیت 256 گیگابایت",
+        "titleEn": "Apple iPhone 15 Pro Max Dual SIM 256GB",
+        "slug": "apple-iphone-15-pro-max-dual-sim-256gb",
+        "sku": "APL-IP15PM-256",
+        "description": "آیفون 15 پرو مکس، پرچمدار جدید اپل با تراشه A17 Pro و دوربین 48 مگاپیکسلی.",
+        "shortDescription": "آیفون 15 پرو مکس با تراشه A17 Pro",
+        "category": {
+            "_id": "507f1f77bcf86cd799439012",
+            "titleFa": "گوشی موبایل",
+            "titleEn": "Mobile Phone",
+            "code": "category-mobile-phone",
+            "level": 1,
+            "parent": {
+                "_id": "507f1f77bcf86cd799439011",
+                "titleFa": "موبایل",
+                "titleEn": "Mobile",
+                "code": "mobile-phone",
+                "level": 0
+            }
+        },
+        "brand": {
+            "_id": "507f1f77bcf86cd799439021",
+            "titleFa": "اپل",
+            "titleEn": "Apple",
+            "code": "apple",
+            "logo": {
+                "url": "https://example.com/brands/apple-logo.png"
+            },
+            "isPremium": true
+        },
+        "status": "marketable",
+        "productType": "product",
+        "images": {
+            "main": {
+                "url": "https://example.com/products/iphone-15-pro-max-main.jpg",
+                "thumbnailUrl": "https://example.com/products/iphone-15-pro-max-thumb.jpg",
+                "webpUrl": "https://example.com/products/iphone-15-pro-max-main.webp",
+                "alt": "آیفون 15 پرو مکس",
+                "isMain": true
+            },
+            "gallery": [
+                {
+                    "url": "https://example.com/products/iphone-15-pro-max-1.jpg",
+                    "webpUrl": "https://example.com/products/iphone-15-pro-max-1.webp",
+                    "alt": "نمای جلو",
+                    "sortOrder": 1
+                },
+                {
+                    "url": "https://example.com/products/iphone-15-pro-max-2.jpg",
+                    "webpUrl": "https://example.com/products/iphone-15-pro-max-2.webp",
+                    "alt": "نمای پشت",
+                    "sortOrder": 2
+                }
+            ]
+        },
+        "specifications": [
+            {
+                "title": "مشخصات کلی",
+                "attributes": [
+                    {
+                        "title": "ابعاد",
+                        "values": [
+                            "159.9 × 76.7 × 8.25 میلی‌متر"
+                        ]
+                    },
+                    {
+                        "title": "وزن",
+                        "values": [
+                            "221 گرم"
+                        ]
+                    },
+                    {
+                        "title": "ساختار بدنه",
+                        "values": [
+                            "تیتانیوم"
+                        ]
+                    }
+                ]
+            },
+            {
+                "title": "صفحه نمایش",
+                "attributes": [
+                    {
+                        "title": "اندازه",
+                        "values": [
+                            "6.7 اینچ"
+                        ]
+                    },
+                    {
+                        "title": "نوع",
+                        "values": [
+                            "Super Retina XDR OLED"
+                        ]
+                    },
+                    {
+                        "title": "رزولوشن",
+                        "values": [
+                            "2796 × 1290 پیکسل"
+                        ]
+                    }
+                ]
+            },
+            {
+                "title": "سخت‌افزار",
+                "attributes": [
+                    {
+                        "title": "پردازنده",
+                        "values": [
+                            "Apple A17 Pro"
+                        ]
+                    },
+                    {
+                        "title": "حافظه رم",
+                        "values": [
+                            "8 گیگابایت"
+                        ]
+                    },
+                    {
+                        "title": "حافظه داخلی",
+                        "values": [
+                            "256 گیگابایت"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "reviewAttributes": [
+            {
+                "title": "حافظه داخلی",
+                "values": [
+                    "256 گیگابایت"
+                ]
+            },
+            {
+                "title": "شبکه ارتباطی",
+                "values": [
+                    "5G"
+                ]
+            }
+        ],
+        "advantages": [
+            "پردازنده قدرتمند A17 Pro",
+            "دوربین با کیفیت استثنایی",
+            "صفحه نمایش ProMotion 120 هرتز"
+        ],
+        "disadvantages": [
+            "قیمت بالا",
+            "شارژر در جعبه نیست"
+        ],
+        "rating": {
+            "rate": 4.7,
+            "count": 2845
+        },
+        "suggestion": {
+            "count": 2560,
+            "percentage": 90
+        },
+        "commentsCount": 1250,
+        "questionsCount": 89,
+        "viewCount": 125000,
+        "salesCount": 3200,
+        "properties": {
+            "isFastShipping": true,
+            "freeShippingBadge": true,
+            "isMultiWarehouse": true,
+            "isJetEligible": true
+        },
+        "colors": [
+            {
+                "_id": "507f1f77bcf86cd799439031",
+                "title": "مشکی",
+                "hexCode": "#000000"
+            },
+            {
+                "_id": "507f1f77bcf86cd799439032",
+                "title": "سفید",
+                "hexCode": "#FFFFFF"
+            },
+            {
+                "_id": "507f1f77bcf86cd799439033",
+                "title": "آبی تیتانیوم",
+                "hexCode": "#394E6A"
+            }
+        ],
+        "tags": [
+            "آیفون",
+            "اپل",
+            "گوشی هوشمند",
+            "iPhone 15"
+        ],
+        "seo": {
+            "title": "خرید گوشی آیفون 15 پرو مکس",
+            "description": "خرید اینترنتی گوشی موبایل اپل آیفون 15 پرو مکس",
+            "canonicalUrl": "https://example.com/product/apple-iphone-15-pro-max"
+        },
+        "badges": [
+            {
+                "type": "best_seller",
+                "title": "پرفروش",
+                "icon": "fire",
+                "color": "#ff5722"
+            }
+        ],
+        "priceRange": {
+            "min": 89000000,
+            "max": 95000000
+        },
+        "variants": [
+            {
+                "_id": "507f1f77bcf86cd799439201",
+                "product": "507f1f77bcf86cd799439101",
+                "seller": {
+                    "_id": "507f1f77bcf86cd799439052",
+                    "code": "AP1K8",
+                    "title": "اپل استور رسمی",
+                    "rating": {
+                        "totalRate": 96,
+                        "totalCount": 8750,
+                        "commitment": 100,
+                        "noReturn": 98.2,
+                        "onTimeShipping": 97.5
+                    },
+                    "stars": 4.8,
+                    "grade": {
+                        "label": "عالی",
+                        "color": "#00a049"
+                    },
+                    "properties": {
+                        "isTrusted": true,
+                        "isOfficial": true
+                    }
+                },
+                "color": {
+                    "_id": "507f1f77bcf86cd799439033",
+                    "title": "آبی تیتانیوم",
+                    "hexCode": "#394E6A"
+                },
+                "warranty": {
+                    "_id": "507f1f77bcf86cd799439041",
+                    "titleFa": "گارانتی ۱۸ ماهه شرکتی",
+                    "duration": {
+                        "value": 18,
+                        "unit": "month"
+                    }
+                },
+                "sku": "APL-IP15PM-256-BT-AP1K8",
+                "price": {
+                    "sellingPrice": 89000000,
+                    "rrpPrice": 92000000,
+                    "discountPercent": 3,
+                    "isIncredible": false,
+                    "isPromotion": false
+                },
+                "orderLimit": {
+                    "min": 1,
+                    "max": 3
+                },
+                "stock": {
+                    "quantity": 25,
+                    "reservedQuantity": 3,
+                    "lowStockThreshold": 5
+                },
+                "status": "marketable",
+                "leadTime": 0,
+                "shipmentMethods": {
+                    "description": "موجود در انبار",
+                    "hasLeadTime": false,
+                    "providers": [
+                        {
+                            "type": "3000",
+                            "title": "ارسال اکسپرس",
+                            "description": "ارسال امروز",
+                            "shippingMode": "express",
+                            "deliveryDay": "today",
+                            "price": {
+                                "value": 0,
+                                "isFree": true,
+                                "text": "رایگان"
+                            }
+                        }
+                    ]
+                },
+                "properties": {
+                    "isFastShipping": true,
+                    "isShipBySeller": false,
+                    "inDigikalaWarehouse": true
+                },
+                "rank": 98.5,
+                "statistics": {
+                    "salesCount": 1250,
+                    "viewCount": 45000
+                },
+                "isActive": true,
+                "createdAt": "2024-09-15T00:00:00.000Z",
+                "updatedAt": "2024-12-01T00:00:00.000Z"
+            },
+            {
+                "_id": "507f1f77bcf86cd799439202",
+                "product": "507f1f77bcf86cd799439101",
+                "seller": {
+                    "_id": "507f1f77bcf86cd799439051",
+                    "code": "DK3M5",
+                    "title": "موبایل مرکزی",
+                    "rating": {
+                        "totalRate": 92,
+                        "totalCount": 15420
+                    },
+                    "stars": 4.6,
+                    "grade": {
+                        "label": "عالی",
+                        "color": "#00a049"
+                    },
+                    "properties": {
+                        "isTrusted": true,
+                        "isOfficial": false
+                    }
+                },
+                "color": {
+                    "_id": "507f1f77bcf86cd799439031",
+                    "title": "مشکی",
+                    "hexCode": "#000000"
+                },
+                "warranty": {
+                    "_id": "507f1f77bcf86cd799439041",
+                    "titleFa": "گارانتی ۱۸ ماهه شرکتی"
+                },
+                "sku": "APL-IP15PM-256-BK-DK3M5",
+                "price": {
+                    "sellingPrice": 91500000,
+                    "rrpPrice": 92000000,
+                    "discountPercent": 1
+                },
+                "stock": {
+                    "quantity": 42,
+                    "reservedQuantity": 5
+                },
+                "status": "marketable",
+                "leadTime": 2,
+                "shipmentMethods": {
+                    "description": "موجود در انبار فروشنده",
+                    "hasLeadTime": true,
+                    "providers": [
+                        {
+                            "type": "seller",
+                            "title": "ارسال عادی",
+                            "description": "ارسال از 2 روز کاری دیگر",
+                            "shippingMode": "normal",
+                            "price": {
+                                "value": 50000,
+                                "isFree": false,
+                                "text": "۵۰,۰۰۰ تومان"
+                            }
+                        }
+                    ]
+                },
+                "properties": {
+                    "isFastShipping": false,
+                    "isShipBySeller": true,
+                    "inDigikalaWarehouse": false
+                },
+                "rank": 85.2,
+                "isActive": true
+            }
+        ],
+        "reviews": [
+            {
+                "_id": "507f1f77bcf86cd799439301",
+                "product": "507f1f77bcf86cd799439101",
+                "user": {
+                    "_id": "507f1f77bcf86cd799439003",
+                    "profile": {
+                        "firstName": "علی"
+                    }
+                },
+                "rating": 5,
+                "title": "عالی",
+                "comment": "بهترین گوشی که تا حالا داشتم. دوربین فوق‌العاده و سرعت بالا.",
+                "isRecommended": true,
+                "advantages": [
+                    "دوربین عالی",
+                    "سرعت بالا",
+                    "صفحه نمایش زیبا"
+                ],
+                "disadvantages": [
+                    "قیمت بالا"
+                ],
+                "isPurchaseVerified": true,
+                "isApproved": true,
+                "helpfulCount": 45,
+                "notHelpfulCount": 3,
+                "createdAt": "2024-10-15T00:00:00.000Z"
+            }
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2024-09-15T00:00:00.000Z",
+        "updatedAt": "2024-12-01T00:00:00.000Z"
+    }
+}

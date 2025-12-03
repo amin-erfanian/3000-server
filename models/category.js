@@ -10,7 +10,7 @@ const categorySchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    code: {
+    slug: {
       type: String,
       required: true,
       unique: true,
@@ -21,19 +21,7 @@ const categorySchema = new mongoose.Schema(
       ref: 'Category',
       default: null,
     },
-    level: {
-      type: Number,
-      default: 0,
-    },
-    icon: {
-      type: String,
-      default: '',
-    },
     image: {
-      type: String,
-      default: '',
-    },
-    description: {
       type: String,
       default: '',
     },
@@ -45,28 +33,24 @@ const categorySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    sortOrder: {
-      type: Number,
-      default: 0,
-    },
   },
   {
     versionKey: false,
     timestamps: true,
-  }
+  },
 );
 
 // Index for faster parent lookups
 categorySchema.index({ parent: 1 });
 
-// Virtual for getting children
+// Virtual for children
 categorySchema.virtual('children', {
   ref: 'Category',
   localField: '_id',
   foreignField: 'parent',
 });
 
-// Method to get full breadcrumb path
+// Method to get full breadcrumb path (root → ... → current)
 categorySchema.methods.getBreadcrumb = async function () {
   const breadcrumb = [this];
   let current = this;
@@ -83,11 +67,9 @@ categorySchema.methods.getBreadcrumb = async function () {
   return breadcrumb;
 };
 
-// Static method to get category tree
+// Static method to get category tree (for menus/navigation)
 categorySchema.statics.getTree = async function (parentId = null) {
-  const categories = await this.find({ parent: parentId, isActive: true })
-    .sort({ sortOrder: 1 })
-    .lean();
+  const categories = await this.find({ parent: parentId, isActive: true }).lean();
 
   for (const category of categories) {
     category.children = await this.getTree(category._id);
@@ -98,4 +80,3 @@ categorySchema.statics.getTree = async function (parentId = null) {
 
 const Category = mongoose.model('Category', categorySchema);
 module.exports = Category;
-

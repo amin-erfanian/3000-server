@@ -16,7 +16,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database Connection
-mongoose.connect(`mongodb://localhost:${DB_PORT}/wallet`, {
+mongoose.connect(`mongodb://localhost:${DB_PORT}/3000`, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

@@ -25,10 +25,6 @@ const warrantySchema = new mongoose.Schema(
         default: 'month',
       },
     },
-    coverage: {
-      type: [String],
-      default: [],
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -37,9 +33,8 @@ const warrantySchema = new mongoose.Schema(
   {
     versionKey: false,
     timestamps: true,
-  }
+  },
 );
 
 const Warranty = mongoose.model('Warranty', warrantySchema);
 module.exports = Warranty;
-

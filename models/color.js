@@ -14,25 +14,16 @@ const colorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    isMultiColor: {
-      type: Boolean,
-      default: false,
-    },
     isActive: {
       type: Boolean,
       default: true,
-    },
-    sortOrder: {
-      type: Number,
-      default: 0,
     },
   },
   {
     versionKey: false,
     timestamps: true,
-  }
+  },
 );
 
 const Color = mongoose.model('Color', colorSchema);
 module.exports = Color;
-

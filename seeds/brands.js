@@ -3,10 +3,15 @@
  * Run: node seeds/brands.js
  */
 
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Brand = require('../models/brand');
 
 const forceReseed = process.argv.includes('--force');
+
+// Use same connection as main app
+const DB_PORT = process.env.DB_PORT || 27017;
+const mongoUri = process.env.MONGODB_URI || `mongodb://localhost:${DB_PORT}/3000`;
 
 const BRANDS = [
   // Mobile & Electronics
@@ -39,8 +44,6 @@ const BRANDS = [
 ];
 
 async function seedBrands() {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/3000-db';
-
   try {
     await mongoose.connect(mongoUri);
     console.log('✓ Connected to MongoDB\n');

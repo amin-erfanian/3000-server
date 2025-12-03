@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Category = require('../models/category');
 const { CATEGORY_TREE } = require('../constants');
@@ -5,9 +6,11 @@ const { CATEGORY_TREE } = require('../constants');
 // Check for --force flag
 const forceReseed = process.argv.includes('--force');
 
-async function seedCategories() {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/3000-db';
+// Use same connection as main app
+const DB_PORT = process.env.DB_PORT || 27017;
+const mongoUri = process.env.MONGODB_URI || `mongodb://localhost:${DB_PORT}/3000`;
 
+async function seedCategories() {
   try {
     await mongoose.connect(mongoUri);
     console.log('✓ Connected to MongoDB\n');
@@ -88,9 +91,11 @@ async function seedCategories() {
     console.error('❌ Error seeding categories:', error.message);
   } finally {
     await mongoose.disconnect();
-    console.log('\n✓ Disconnected from MongoDB');
   }
 }
 
-// Run the seeder
-seedCategories();
+module.exports = { seedCategories };
+
+if (require.main === module) {
+  seedCategories();
+}

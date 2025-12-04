@@ -29,35 +29,27 @@ db.once('open', () => {
 
 const authMiddleware = require('./middlewares/authorization');
 
-const subscriptionRoutes = require('./routes/subscriptions');
-const appInfoRoutes = require('./routes/app-info');
-const ticketRoutes = require('./routes/ticket');
-const assetsValueRoutes = require('./routes/assets-value');
-const assetsRoutes = require('./routes/assets');
-const transactionRoutes = require('./routes/transactions');
-const debtsRoutes = require('./routes/debts');
-const categoryRoutes = require('./routes/categories');
-const contactRoutes = require('./routes/contacts');
-const resourceRoutes = require('./routes/resources');
 const authRoutes = require('./routes/authentication');
-const profileRoutes = require('./routes/profile');
-const loanRoutes = require('./routes/loans');
-const budgetRoutes = require('./routes/budget');
 
-app.use('/', subscriptionRoutes);
+// E-commerce routes
+const brandRoutes = require('./routes/brands');
+const colorRoutes = require('./routes/colors');
+const productRoutes = require('./routes/products');
+const reviewRoutes = require('./routes/reviews');
+const sellerRoutes = require('./routes/sellers');
+const variantRoutes = require('./routes/variants');
+const warrantyRoutes = require('./routes/warranties');
+
 app.use('/auth', authRoutes);
-app.use('/app-info', appInfoRoutes);
-app.use('/ticket', ticketRoutes);
-app.use('/assets', assetsValueRoutes);
-app.use('/assets', authMiddleware, assetsRoutes);
-app.use('/profile', authMiddleware, profileRoutes);
-app.use('/transactions', authMiddleware, transactionRoutes);
-app.use('/debts', authMiddleware, debtsRoutes);
-app.use('/categories', authMiddleware, categoryRoutes);
-app.use('/contacts', authMiddleware, contactRoutes);
-app.use('/resources', authMiddleware, resourceRoutes);
-app.use('/loans', authMiddleware, loanRoutes);
-app.use('/budgets', authMiddleware, budgetRoutes);
+
+// E-commerce routes (public GET routes)
+app.use('/brands', brandRoutes);
+app.use('/colors', colorRoutes);
+app.use('/products', productRoutes);
+app.use('/reviews', reviewRoutes);
+app.use('/sellers', sellerRoutes);
+app.use('/variants', variantRoutes);
+app.use('/warranties', warrantyRoutes);
 
 app.use(errorHandlerMiddleware);
 

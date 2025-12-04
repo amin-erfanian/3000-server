@@ -1,12 +1,71 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const addressSchema = new mongoose.Schema(
+  {
+    label: {
+      type: String,
+      default: '',
+    },
+    recipientName: {
+      type: String,
+      required: true,
+    },
+    recipientPhone: {
+      type: String,
+      required: true,
+    },
+    province: {
+      type: String,
+      required: true,
+    },
+    city: {
+      type: String,
+      required: true,
+    },
+    district: {
+      type: String,
+      default: '',
+    },
+    addressLine: {
+      type: String,
+      required: true,
+    },
+    houseNumber: {
+      type: String,
+      default: '',
+    },
+    unit: {
+      type: String,
+      default: '',
+    },
+    postalCode: {
+      type: String,
+      default: '',
+    },
+    coordinates: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: true },
+);
+
 const userSchema = new mongoose.Schema(
   {
     phone: {
       type: String,
       required: true,
       unique: true,
+    },
+    email: {
+      type: String,
+      default: '',
+      sparse: true,
     },
     password: {
       type: String,
@@ -21,14 +80,66 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: '',
       },
+      avatar: {
+        type: String,
+        default: '',
+      },
       gender: {
         type: String,
+        enum: ['', 'male', 'female', 'other'],
         default: '',
       },
       birthdate: {
         type: String,
         default: '',
       },
+      nationalId: {
+        type: String,
+        default: '',
+      },
+    },
+    addresses: {
+      type: [addressSchema],
+      default: [],
+    },
+    favorites: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Product',
+        },
+      ],
+      default: [],
+    },
+    notifications: {
+      sms: {
+        type: Boolean,
+        default: true,
+      },
+      email: {
+        type: Boolean,
+        default: true,
+      },
+      push: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    isPhoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'suspended', 'banned'],
+      default: 'active',
+    },
+    lastLoginAt: {
+      type: Date,
     },
   },
   {
@@ -36,15 +147,6 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
-// userSchema.pre('save', async function (next) {
-//   if (!this.isModified('password')) {
-//     return next();
-//   }
-//   const salt = await bcrypt.genSalt(10);
-//   this.password = await bcrypt.hash(this.password, salt);
-//   next();
-// });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);

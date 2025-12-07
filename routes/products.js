@@ -95,6 +95,88 @@ router.get('/slug/:slug', async (req, res) => {
   res.json(product);
 });
 
+// GET products by category slug (includes all subcategories)
+router.get('/category/:slug', async (req, res) => {
+  const Category = require('../models/category');
+  const {
+    page = 1,
+    limit = 20,
+    isActive,
+    status,
+    brand,
+    search,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+  } = req.query;
+
+  const category = await Category.findOne({ slug: req.params.slug });
+
+  if (!category) {
+    throw new CustomError(404, 'NOT_FOUND', {
+      fa: 'دسته‌بندی یافت نشد.',
+      en: 'Category not found.',
+    });
+  }
+
+  // Get all descendant category IDs recursively
+  const getAllDescendantIds = async (parentId) => {
+    const children = await Category.find({ parent: parentId }, '_id');
+    let ids = children.map((c) => c._id);
+
+    for (const child of children) {
+      const descendantIds = await getAllDescendantIds(child._id);
+      ids = ids.concat(descendantIds);
+    }
+
+    return ids;
+  };
+
+  const descendantIds = await getAllDescendantIds(category._id);
+  const allCategoryIds = [category._id, ...descendantIds];
+
+  const filter = { category: { $in: allCategoryIds } };
+
+  if (isActive !== undefined) {
+    filter.isActive = isActive === 'true';
+  }
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (brand) {
+    filter.brand = brand;
+  }
+
+  if (search) {
+    filter.$text = { $search: search };
+  }
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate('category', 'titleFa titleEn slug')
+      .populate('brand', 'titleFa titleEn slug logo')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit)),
+    Product.countDocuments(filter),
+  ]);
+
+  res.json({
+    category,
+    data: products,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / parseInt(limit)),
+    },
+  });
+});
+
 // GET product variants
 router.get('/:id/variants', async (req, res) => {
   const Variant = require('../models/variant');
@@ -158,4 +240,3 @@ router.get('/:id/reviews', async (req, res) => {
 });
 
 module.exports = router;
-

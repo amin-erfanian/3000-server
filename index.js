@@ -39,6 +39,7 @@ const reviewRoutes = require('./routes/reviews');
 const sellerRoutes = require('./routes/sellers');
 const variantRoutes = require('./routes/variants');
 const warrantyRoutes = require('./routes/warranties');
+const categoryRoutes = require('./routes/categories');
 
 app.use('/auth', authRoutes);
 
@@ -50,6 +51,7 @@ app.use('/reviews', reviewRoutes);
 app.use('/sellers', sellerRoutes);
 app.use('/variants', variantRoutes);
 app.use('/warranties', warrantyRoutes);
+app.use('/categories', categoryRoutes);
 
 app.use(errorHandlerMiddleware);
 

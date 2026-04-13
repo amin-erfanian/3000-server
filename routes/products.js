@@ -8,6 +8,7 @@ const Variant = require('../models/variant');
 const CustomError = require('../classes/custom-error');
 
 const normalizePersian = require('../utilities/normalize-persian');
+const authMiddleware = require('../middlewares/authorization');
 
 // GET all products
 router.get('/', async (req, res) => {
@@ -457,6 +458,131 @@ router.get('/list', async (req, res) => {
                 description: 'search by brand slug',
               },
             ],
+          ],
+        },
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+router.get('/seller', authMiddleware, async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sort_column = 'createdAt',
+      sort_order = 'desc',
+      status, // draft | pending | active | inactive
+      keyword,
+    } = req.query;
+
+    const sellerId = req.seller._id;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    // 1) Find all product IDs this seller has variants for
+    const variantFilter = { seller: sellerId };
+    const sellerVariants = await Variant.find(variantFilter).select('product status price stock').lean();
+
+    const productIds = [...new Set(sellerVariants.map((v) => v.product.toString()))];
+
+    // 2) Build product-level filter
+    const productFilter = { _id: { $in: productIds } };
+    if (status) productFilter.status = status;
+    if (keyword) {
+      const kw = normalizePersian(keyword);
+      productFilter.$or = [
+        { titleFa: { $regex: kw, $options: 'i' } },
+        { titleEn: { $regex: kw, $options: 'i' } },
+      ];
+    }
+
+    const sortDir = sort_order === 'asc' ? 1 : -1;
+    const sortObj = { [sort_column]: sortDir };
+
+    const [products, total_rows] = await Promise.all([
+      Product.find(productFilter)
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limitNum)
+        .populate('category', 'titleFa slug')
+        .populate('brand', 'titleFa slug')
+        .lean(),
+      Product.countDocuments(productFilter),
+    ]);
+
+    // 3) Map variants by productId for quick lookup
+    const variantsByProduct = sellerVariants.reduce((acc, v) => {
+      const pid = v.product.toString();
+      if (!acc[pid]) acc[pid] = [];
+      acc[pid].push(v);
+      return acc;
+    }, {});
+
+    const items = products.map((p) => {
+      const pid = p._id.toString();
+      const variants = variantsByProduct[pid] || [];
+      const hasVariants = variants.length > 0;
+
+      return {
+        product_id: p._id,
+        title: p.titleFa || p.titleEn || '',
+        title_en: p.titleEn || '',
+        slug: p.slug,
+        status: p.status, // draft | pending | active | inactive
+        moderation_status: p.status,
+        is_owner: true,
+        fake: p.properties?.isFake ?? false,
+        variants_count: variants.length,
+        has_variants: hasVariants,
+        main_category_title: p.category?.titleFa || '',
+        brand_title: p.brand?.titleFa || '',
+        image_src: p.images?.main?.url || null,
+        product_dimension: {
+          length: p.dimensions?.length ?? 0,
+          width: p.dimensions?.width ?? 0,
+          height: p.dimensions?.height ?? 0,
+          weight: p.weight ?? 0,
+        },
+        tags: [],
+        site: 'digikala',
+      };
+    });
+
+    res.json({
+      status: 'ok',
+      data: {
+        sort_data: {
+          sort_column,
+          sort_order,
+          sort_columns: ['createdAt', 'titleFa', 'status'],
+        },
+        pager: {
+          page: pageNum,
+          item_per_page: limitNum,
+          total_pages: Math.ceil(total_rows / limitNum),
+          total_rows,
+        },
+        form_data: {},
+        items,
+        meta_data: {
+          filters: [
+            { name: 'keyword', type: 'string', description: 'search by product name' },
+            {
+              name: 'status',
+              type: 'option',
+              label: 'وضعیت',
+              options: ['draft', 'pending', 'active', 'inactive'],
+            },
+            {
+              name: 'multi_search',
+              type: 'string',
+              description: 'search by product id or title',
+            },
           ],
         },
       },

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const CustomError = require('../classes/custom-error');
 
 const authMiddleware = (req, res, next) => {
-  const token = req.header('Authorization')?.split(' ')[1];
+  const token = req.cookies?.token;
 
   if (!token) {
     throw new CustomError(
@@ -20,7 +20,7 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
-    req.user = decodedToken;
+    req.seller = { ...decodedToken, _id: decodedToken._id ?? decodedToken.id };
     next();
   } catch (error) {
     throw new CustomError(

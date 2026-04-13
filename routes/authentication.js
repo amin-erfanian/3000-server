@@ -1,66 +1,48 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const Seller = require('../models/seller');
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = process.env.SECRET_KEY;
 const VerificationCode = require('../models/verification-code');
 const { generateCode } = require('../utilities/generate-code');
-const { sendPatternSMS } = require('../services/sms-service'); // adjust path as needed
+const { sendPatternSMS } = require('../services/sms-service');
 const bcrypt = require('bcryptjs');
 const CustomError = require('../classes/custom-error');
 const logger = require('../classes/custom-logger');
 
-router.post('/signup', async (req, res) => {
-  const { phone, password, name } = req.body;
+router.post('/send-otp', async (req, res) => {
+  const { phone } = req.body;
 
-  const userExists = await User.findOne({ phone });
-  if (userExists) {
-    throw new CustomError(400, 'ALREADY_EXISTS', {
-      fa: 'این شماره قبلا ثبت نام شده است.',
-      en: 'User already exists.',
+  if (!phone) {
+    throw new CustomError(400, 'MISSING_PHONE', {
+      fa: 'شماره همراه الزامی است.',
+      en: 'Phone number is required.',
     });
   }
 
-  const existingCode = await VerificationCode.findOne({ phone });
-  if (existingCode) {
-    await VerificationCode.deleteOne({ phone });
-  }
+  // Clear any existing code for this phone
+  await VerificationCode.deleteOne({ phone });
 
   const code = generateCode();
-
   const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  await VerificationCode.create({ phone, code, expiresAt });
 
-  await VerificationCode.create({
-    phone,
-    code,
-    expiresAt,
-    password: hashedPassword,
-    profile: {
-      firstName: name,
-    },
-  });
+  // try {
+  //   await sendPatternSMS({ to: phone, code, type: 'login' });
+  // } catch (error) {
+  //   throw new CustomError(
+  //     500,
+  //     'MESSAGE_FAILED',
+  //     { fa: 'ارسال پیام موفقیت آمیز نبود.', en: 'Message send failed.' },
+  //     error,
+  //   );
+  // }
 
-  try {
-    await sendPatternSMS({ to: phone, code, type: 'signup' });
-  } catch (error) {
-    throw new CustomError(
-      500,
-      'MESSAGE_FAILED',
-      {
-        fa: 'ارسال پیام موفقیت آمیز نبود.',
-        en: 'Message send failed.',
-      },
-      error,
-    );
-  }
-
-  res.status(200).json({ message: 'کد تایید به شماره همراه شما ارسال شد.' });
+  res.status(200).json({ message: 'کد تایید به شماره همراه شما ارسال شد.', code });
 });
 
-router.post('/verify-phone', async (req, res) => {
+router.post('/verify-otp', async (req, res) => {
   const { phone, code: enteredCode } = req.body;
 
   const record = await VerificationCode.findOne({ phone });
@@ -79,80 +61,71 @@ router.post('/verify-phone', async (req, res) => {
     });
   }
 
-  const user = await User.create({
-    phone: record.phone,
-    password: record.password,
-    isVerified: true,
-    profile: {
-      firstName: record.profile.firstName,
-    },
-  });
-
-  logger.info(`New user signup completed [${user.phone}] [${user.profile.firstName}]`);
-
   await VerificationCode.deleteOne({ phone });
 
-  const token = jwt.sign(
-    {
-      _id: user._id,
-      phone: user.phone,
-    },
-    SECRET_KEY,
-  );
+  // Find or create seller
+  let seller = await Seller.findOne({ phone });
+  let isNew = false;
 
-  res.status(201).json({
-    token,
-    profile: user.profile,
+  if (!seller) {
+    seller = await Seller.create({ phone, isVerified: true });
+    isNew = true;
+    logger.info(`New seller registered [${seller.phone}]`);
+  } else {
+    logger.info(`Seller logged in [${seller.phone}]`);
+  }
+
+  // Create JWT token
+  const token = jwt.sign({ _id: seller._id, phone: seller.phone }, SECRET_KEY, { expiresIn: '7d' });
+
+  // Set cookie
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+
+  res.status(isNew ? 201 : 200).json({
+    isNew,
+    profile: seller.profile ?? {},
   });
 });
 
+// ─── Forget Password (kept for later) ────────────────────────────────────────
 router.post('/forget-password', async (req, res) => {
   const { phone } = req.body;
 
-  const userExists = await User.findOne({ phone });
-  if (!userExists) {
+  const seller = await Seller.findOne({ phone });
+  if (!seller) {
     throw new CustomError(400, 'USER_NOT_FOUND', {
       fa: 'کاربری با این شماره همراه یافت نشد.',
       en: 'User not found.',
     });
   }
 
-  const existingCode = await VerificationCode.findOne({ phone });
-  if (existingCode) {
-    await VerificationCode.deleteOne({ phone });
-  }
+  await VerificationCode.deleteOne({ phone });
 
   const code = generateCode();
-  const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
+  const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
 
-  await VerificationCode.create({
-    phone,
-    code,
-    expiresAt,
-  });
+  await VerificationCode.create({ phone, code, expiresAt });
 
-  try {
-    await sendPatternSMS({
-      to: phone,
-      code,
-      type: 'resetPassword',
-    });
-  } catch (error) {
-    console.log(error);
-    throw new CustomError(
-      500,
-      'MESSAGE_FAILED',
-      {
-        fa: 'ارسال پیام موفقیت آمیز نبود.',
-        en: 'Message send failed.',
-      },
-      error,
-    );
-  }
+  // try {
+  //   await sendPatternSMS({ to: phone, code, type: 'resetPassword' });
+  // } catch (error) {
+  //   throw new CustomError(
+  //     500,
+  //     'MESSAGE_FAILED',
+  //     { fa: 'ارسال پیام موفقیت آمیز نبود.', en: 'Message send failed.' },
+  //     error,
+  //   );
+  // }
 
   res.status(200).json({ message: 'کد تایید برای تغییر کلمه عبور به شماره همراه شما ارسال شد.' });
 });
 
+// ─── Reset Password (kept for later) ─────────────────────────────────────────
 router.post('/reset-password', async (req, res) => {
   const { phone, code: enteredCode, password: newPassword } = req.body;
 
@@ -172,8 +145,8 @@ router.post('/reset-password', async (req, res) => {
     });
   }
 
-  const user = await User.findOne({ phone });
-  if (!user) {
+  const seller = await Seller.findOne({ phone });
+  if (!seller) {
     throw new CustomError(400, 'USER_NOT_FOUND', {
       fa: 'کاربری با این شماره همراه یافت نشد.',
       en: 'User not found.',
@@ -181,42 +154,12 @@ router.post('/reset-password', async (req, res) => {
   }
 
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-  user.password = hashedPassword;
-  await user.save();
+  seller.password = await bcrypt.hash(newPassword, salt);
+  await seller.save();
 
   await VerificationCode.deleteOne({ phone });
 
   res.status(200).json({ message: 'رمز عبور با موفقیت تغییر یافت.' });
-});
-
-router.post('/login', async (req, res) => {
-  const { phone, password } = req.body;
-
-  const user = await User.findOne({ phone });
-
-  if (user && (await user.matchPassword(password))) {
-    const { profile } = user;
-
-    const token = jwt.sign(
-      {
-        _id: user._id,
-        phone: user.phone,
-      },
-      SECRET_KEY,
-    );
-
-    res.json({
-      token,
-      profile: profile,
-    });
-  } else {
-    throw new CustomError(401, 'WRONG_CREDENTIALS', {
-      fa: 'شماره همراه یا کلمه عبور وارد شده اشتباه است',
-      en: 'Phone number or password is incorrect.',
-    });
-  }
 });
 
 module.exports = router;

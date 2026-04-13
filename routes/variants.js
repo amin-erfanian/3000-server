@@ -2,7 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const Variant = require('../models/variant');
+const Product = require('../models/product');
 const CustomError = require('../classes/custom-error');
+const authMiddleware = require('../middlewares/authorization');
 
 // GET all variants
 router.get('/', async (req, res) => {
@@ -98,66 +100,82 @@ router.get('/:id', async (req, res) => {
   res.json(variant);
 });
 
-router.post('/create', async (req, res) => {
+router.post('/create', authMiddleware, async (req, res) => {
   try {
-    const { product, seller, price = 0, stock = 0 } = req.body;
+    const sellerId = req.seller._id;
+    const {
+      productId,
+      price = 0,
+      stock = 0,
+      colorId,
+      warrantyId,
+      size = '',
+      barcode = '',
+      leadTime = 0,
+      discountPercent = 0,
+    } = req.body;
 
-    // ── Validation ──────────────────────────────────────────────
-    if (!product || !mongoose.Types.ObjectId.isValid(product)) {
+    if (!productId || price === null || price === undefined) {
       return res.status(400).json({
-        success: false,
-        message: 'A valid product id is required',
+        status: 'error',
+        message: 'productId and price are required',
       });
     }
 
-    if (!seller || !mongoose.Types.ObjectId.isValid(seller)) {
-      return res.status(400).json({
-        success: false,
-        message: 'A valid seller id is required',
-      });
+    // 1) Verify product exists
+    const product = await Product.findById(productId)
+      .populate('category', 'titleFa')
+      .populate('brand', 'titleFa')
+      .lean();
+
+    if (!product) {
+      return res.status(404).json({ status: 'error', message: 'product not found' });
     }
 
-    // ── Prevent duplicate product+seller variant ────────────────
-    const exists = await Variant.findOne({ product, seller });
-    if (exists) {
+    // 2) Check if this seller already has a variant for this product
+    const existing = await Variant.findOne({ product: productId, seller: sellerId });
+    if (existing) {
       return res.status(409).json({
-        success: false,
-        message: 'A variant for this product and seller already exists',
-        data: exists,
+        status: 'error',
+        message: 'you already have a variant for this product',
+        data: { variant_id: existing._id },
       });
     }
 
-    // ── Create ──────────────────────────────────────────────────
-    const variant = new Variant({
-      product,
-      seller,
+    // 3) Create the variant
+    const variant = await Variant.create({
+      product: productId,
+      seller: sellerId,
       price,
       stock,
+      color: colorId || undefined,
+      warranty: warrantyId || undefined,
+      size,
+      barcode,
+      leadTime,
+      discountPercent,
+      originalPrice: price, // required
       status: 'pending',
     });
 
-    const saved = await variant.save();
+    // 4) Check total variants on this product (so caller knows if product is now "live")
+    const variantsCount = await Variant.countDocuments({ product: productId });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Variant created successfully',
-      data: saved,
+    res.status(201).json({
+      status: 'ok',
+      data: {
+        variant_id: variant._id,
+        product_id: productId,
+        product_title: product.titleFa || product.titleEn,
+        variants_count: variantsCount, // total variants across all sellers
+        status: variant.status,
+        price: variant.price,
+        stock: variant.stock,
+      },
     });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: messages,
-      });
-    }
-
-    console.error('Create variant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: err.message });
   }
 });
 

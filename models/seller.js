@@ -2,20 +2,26 @@ const mongoose = require('mongoose');
 
 const sellerSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    code: {
+    phone: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      index: true,
+    },
+    password: {
+      type: String,
+      default: null, // set later via reset-password
+    },
+    code: {
+      type: String,
+      unique: true,
+      sparse: true,
       index: true,
     },
     title: {
       type: String,
-      required: true,
+      default: '',
     },
     slug: {
       type: String,
@@ -31,42 +37,15 @@ const sellerSchema = new mongoose.Schema(
       default: '',
     },
     contactInfo: {
-      phone: {
-        type: String,
-        default: '',
-      },
-      email: {
-        type: String,
-        default: '',
-      },
-      address: {
-        type: String,
-        default: '',
-      },
-      city: {
-        type: String,
-        default: '',
-      },
-      province: {
-        type: String,
-        default: '',
-      },
-      postalCode: {
-        type: String,
-        default: '',
-      },
+      email: { type: String, default: '' },
+      address: { type: String, default: '' },
+      city: { type: String, default: '' },
+      province: { type: String, default: '' },
+      postalCode: { type: String, default: '' },
     },
     rating: {
-      score: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 5,
-      },
-      count: {
-        type: Number,
-        default: 0,
-      },
+      score: { type: Number, default: 0, min: 0, max: 5 },
+      count: { type: Number, default: 0 },
     },
     status: {
       type: String,
@@ -81,19 +60,12 @@ const sellerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    registrationDate: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
     versionKey: false,
     timestamps: true,
   },
 );
-
-// Index for user lookup
-sellerSchema.index({ user: 1 });
 
 const Seller = mongoose.model('Seller', sellerSchema);
 module.exports = Seller;

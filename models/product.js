@@ -52,6 +52,22 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
 
+    sku: {
+      type: String,
+      default: '',
+      index: true,
+    },
+
+    dimensions: {
+      length: { type: Number, default: 0 },
+      width: { type: Number, default: 0 },
+      height: { type: Number, default: 0 },
+    },
+    weight: {
+      type: Number,
+      default: 0,
+    },
+
     // Images (array of URLs)
     images: {
       main: imageSchema,

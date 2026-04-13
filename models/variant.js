@@ -24,12 +24,6 @@ const variantSchema = new mongoose.Schema(
       ref: 'Warranty',
     },
 
-    // Variant attributes
-    sku: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
     barcode: {
       type: String,
       default: '',

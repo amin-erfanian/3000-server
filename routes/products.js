@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
+const slugify = require('slugify');
+
 const Product = require('../models/product');
 const Variant = require('../models/variant');
 const CustomError = require('../classes/custom-error');
+
+const normalizePersian = require('../utilities/normalize-persian');
 
 // GET all products
 router.get('/', async (req, res) => {
@@ -64,9 +69,123 @@ router.get('/', async (req, res) => {
   });
 });
 
+router.post('/create', async (req, res) => {
+  try {
+    const { titleFa, titleEn, description, category, brand, fake, productId, dimensions, weight, images } =
+      req.body;
+
+    // ── Validation ──────────────────────────────────────────────
+    if (!titleFa) {
+      return res.status(400).json({
+        success: false,
+        message: 'titleFa is required',
+      });
+    }
+
+    if (!category?._id || !mongoose.Types.ObjectId.isValid(category._id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid category is required',
+      });
+    }
+
+    if (brand?._id && !mongoose.Types.ObjectId.isValid(brand._id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid brand id',
+      });
+    }
+
+    // ── Slug Generation ─────────────────────────────────────────
+    // Try titleEn first, fallback to titleFa
+    const slugBase = titleEn?.trim() || titleFa?.trim();
+    let slug = slugify(slugBase, { lower: true, strict: true });
+
+    // Append productId if provided for extra uniqueness
+    if (productId) {
+      slug = `${slug}-${productId}`;
+    }
+
+    // Ensure slug is unique
+    const slugExists = await Product.findOne({ slug });
+    if (slugExists) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
+    // ── Build images object ─────────────────────────────────────
+    // gallery items are expected as: [{ url, thumbnailUrl?, alt? }]
+    const galleryImages =
+      images?.gallery?.map((img) => ({
+        url: img.url,
+        thumbnailUrl: img.thumbnailUrl || '',
+        alt: img.alt || '',
+      })) ?? [];
+
+    // ── Build product document ──────────────────────────────────
+    const newProduct = new Product({
+      titleFa,
+      titleEn: titleEn || '',
+      slug,
+      description: description || '',
+      dimensions: {
+        length: Number(dimensions?.length) || 0,
+        width: Number(dimensions?.width) || 0,
+        height: Number(dimensions?.height) || 0,
+      },
+      weight: Number(weight) || 0,
+
+      // Extract only the ObjectId from the nested objects
+      category: category._id,
+      brand: brand?._id || undefined,
+
+      images: {
+        // main image is not in the payload — leave undefined or set if present
+        ...(images?.main && { main: images.main }),
+        gallery: galleryImages,
+      },
+
+      properties: {
+        isFake: fake ?? false,
+      },
+    });
+
+    const savedProduct = await newProduct.save();
+
+    return res.status(201).json({
+      success: true,
+      message: 'Product created successfully',
+      data: savedProduct,
+    });
+  } catch (error) {
+    // Duplicate slug edge case
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'A product with this slug already exists',
+        field: Object.keys(error.keyPattern)[0],
+      });
+    }
+
+    // Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: messages,
+      });
+    }
+
+    console.error('Add product error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+});
+
 router.get('/list', async (req, res) => {
   try {
-    // Parse filters
     const {
       page = 1,
       limit = 10,
@@ -81,48 +200,149 @@ router.get('/list', async (req, res) => {
       keyword,
     } = req.query;
 
-    const skip = (page - 1) * limit;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
 
-    // Build product/variant filters
+    // -------- Product-level filters (including brand/category slug, fake, keyword) --------
     const productMatch = {};
-    const variantMatch = {};
 
-    if (categories) productMatch['product.category'] = { $in: categories.split(',') };
-    if (brands) productMatch['product.brand'] = { $in: brands.split(',') };
-    if (fake !== undefined) productMatch['product.properties.isFake'] = fake === 'true';
-
-    if (keyword) {
-      productMatch['product.titleFa'] = {
-        $regex: keyword,
-        $options: 'i',
-      };
+    // filter by category slug (assuming product.category is an ObjectId -> Category)
+    // and Category has `slug` field
+    if (categories) {
+      const categorySlugs = categories.split(',');
+      productMatch['category.slug'] = { $in: categorySlugs };
     }
+
+    // filter by brand slug (assuming product.brand is an ObjectId -> Brand)
+    // and Brand has `slug` field
+    if (brands) {
+      const brandSlugs = brands.split(',');
+      productMatch['brand.slug'] = { $in: brandSlugs };
+    }
+
+    if (fake !== undefined) {
+      productMatch['properties.isFake'] = fake === 'true';
+    }
+
+    // keyword in titleFa OR titleEn
+    if (keyword) {
+      const kw = normalizePersian(keyword);
+
+      productMatch.$or = [
+        { titleFa: { $regex: kw, $options: 'i' } },
+        { titleEn: { $regex: kw, $options: 'i' } },
+      ];
+    }
+
+    // -------- Variant-level filters --------
+    const variantMatch = {};
     if (statuses) variantMatch.status = { $in: statuses.split(',') };
     if (colors) variantMatch.color = { $in: colors.split(',') };
 
-    // Aggregate Variants rooted pipeline (faster)
+    // -------- Aggregation rooted on Product --------
     const pipeline = [
+      // 1) Start from products
       {
         $match: {
-          ...variantMatch,
+          // product-level filters that do NOT depend on brand/category slug
+          ...(fake !== undefined && { 'properties.isFake': fake === 'true' }),
+          ...(keyword && {
+            $or: [
+              { titleFa: { $regex: normalizePersian(keyword), $options: 'i' } },
+              { titleEn: { $regex: normalizePersian(keyword), $options: 'i' } },
+            ],
+          }),
         },
       },
+
+      // 2) Lookup brand & category for slug filtering + titles
       {
         $lookup: {
-          from: 'products',
-          localField: 'product',
+          from: 'brands',
+          localField: 'brand',
           foreignField: '_id',
-          as: 'product',
+          as: 'brand',
         },
       },
-      { $unwind: '$product' },
+      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
+
       {
-        $match: productMatch,
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+
+      // 3) Apply brand/category slug filters here (productMatch by slugs)
+      {
+        $match: {
+          ...(categories && {
+            'category.slug': { $in: categories.split(',') },
+          }),
+          ...(brands && {
+            'brand.slug': { $in: brands.split(',') },
+          }),
+        },
+      },
+
+      // 4) Lookup variants (left join). We will filter them in a sub‑pipeline
+      {
+        $lookup: {
+          from: 'variants',
+          let: { productId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$product', '$$productId'] },
+                ...variantMatch,
+              },
+            },
+          ],
+          as: 'variants',
+        },
+      },
+
+      // 5) Project and normalize. If there are no variants, we return zeros/defaults.
+      {
+        $project: {
+          _id: 1,
+          titleFa: 1,
+          titleEn: 1,
+          'images.main.url': 1,
+          brand: { titleFa: '$brand.titleFa' },
+          category: { titleFa: '$category.titleFa' },
+          variants: 1,
+        },
+      },
+
+      // 6) Pagination
+      { $skip: skip },
+      { $limit: limitNum },
+    ];
+
+    const items = await Product.aggregate(pipeline);
+
+    // total_rows for pager (count products with same filters)
+    const countPipeline = [
+      {
+        $match: {
+          ...(fake !== undefined && { 'properties.isFake': fake === 'true' }),
+          ...(keyword && {
+            $or: [
+              { titleFa: { $regex: normalizePersian(keyword), $options: 'i' } },
+              { titleEn: { $regex: normalizePersian(keyword), $options: 'i' } },
+            ],
+          }),
+        },
       },
       {
         $lookup: {
           from: 'brands',
-          localField: 'product.brand',
+          localField: 'brand',
           foreignField: '_id',
           as: 'brand',
         },
@@ -131,64 +351,64 @@ router.get('/list', async (req, res) => {
       {
         $lookup: {
           from: 'categories',
-          localField: 'product.category',
+          localField: 'category',
           foreignField: '_id',
           as: 'category',
         },
       },
       { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
       {
-        $project: {
-          _id: 1,
-          'product.titleFa': 1,
-          'product.images.main.url': 1,
-          status: 1,
-          price: 1,
-          color: 1,
-          'brand.titleFa': 1,
-          'category.titleFa': 1,
+        $match: {
+          ...(categories && {
+            'category.slug': { $in: categories.split(',') },
+          }),
+          ...(brands && {
+            'brand.slug': { $in: brands.split(',') },
+          }),
         },
       },
-      { $skip: parseInt(skip) },
-      { $limit: parseInt(limit) },
+      { $count: 'total' },
     ];
 
-    const items = await Variant.aggregate(pipeline);
-    const total_rows = await Variant.countDocuments({
-      ...variantMatch,
+    const countResult = await Product.aggregate(countPipeline);
+    const total_rows = countResult[0]?.total || 0;
+
+    // -------- Format output: if no variants, return 0 for variant fields --------
+    const formatted = items.map((p) => {
+      const hasVariant = Array.isArray(p.variants) && p.variants.length > 0;
+      const v = hasVariant ? p.variants[0] : {}; // pick first variant or empty
+
+      return {
+        id: p._id,
+        title: p.titleFa || p.titleEn || '',
+        status: v.status || 0,
+        min_price: v.price ?? 0,
+        color: v.color || '',
+        commission: {
+          canSell: false,
+          commission: 0.02,
+          type: 'document',
+          message: [
+            'برای درج کالا در این گروه کالایی نیاز به ارایه مدرک است، برای اطلاعات بیشتر به بخش مدارک فروشنده مراجعه کنید.',
+          ],
+        },
+        market_price: 0,
+        image_src: p.images?.main?.url || null,
+        price_type: { recommended: 'پیشنهادی' },
+        number_of_sellers: hasVariant ? 1 : 0,
+        is_selling: false,
+        brand: p.brand?.titleFa || '',
+        category: p.category?.titleFa || '',
+        category_price_configs: {
+          order_limit_minimum: hasVariant ? 1 : 0,
+          order_limit_maximum: hasVariant ? 1000 : 0,
+        },
+        tags: [],
+        demand_count: 0,
+        site: 'digikala',
+      };
     });
 
-    // Transform DB docs → required shape
-    const formatted = items.map((v) => ({
-      id: v._id,
-      title: v.product?.titleFa,
-      status: v.status,
-      min_price: v.price || 0,
-      commission: {
-        canSell: false,
-        commission: 0.02,
-        type: 'document',
-        message: [
-          'برای درج کالا در این گروه کالایی نیاز به ارایه مدرک است، برای اطلاعات بیشتر به بخش مدارک فروشنده مراجعه کنید.',
-        ],
-      },
-      market_price: 0,
-      image_src: v.product?.images?.main?.url || null,
-      price_type: { recommended: 'پیشنهادی' },
-      number_of_sellers: 1,
-      is_selling: false,
-      brand: v.brand?.titleFa || '',
-      category: v.category?.titleFa || '',
-      category_price_configs: {
-        order_limit_minimum: 1,
-        order_limit_maximum: 1000,
-      },
-      tags: [],
-      demand_count: 0,
-      site: 'digikala',
-    }));
-
-    // Response payload
     res.json({
       status: 'ok',
       data: {
@@ -198,9 +418,9 @@ router.get('/list', async (req, res) => {
           sort_columns: [sort_column],
         },
         pager: {
-          page: parseInt(page),
-          item_per_page: parseInt(limit),
-          total_pages: Math.ceil(total_rows / limit),
+          page: pageNum,
+          item_per_page: limitNum,
+          total_pages: Math.ceil(total_rows / limitNum),
           total_rows,
         },
         form_data: {
@@ -214,7 +434,7 @@ router.get('/list', async (req, res) => {
                 name: 'keyword',
                 type: 'string',
                 required: 'true',
-                description: 'search by product name',
+                description: 'search by product name (fa/en)',
               },
             ],
             [
@@ -224,8 +444,7 @@ router.get('/list', async (req, res) => {
                 label: 'گروه اصلی',
                 dynamic: true,
                 db_name: 'category',
-                description: 'search by product category ids',
-                values: [{ 18: 'لپ تاپ و الترابوک' }],
+                description: 'search by category slug',
               },
             ],
             [
@@ -235,25 +454,10 @@ router.get('/list', async (req, res) => {
                 label: 'برند کالا',
                 dynamic: true,
                 db_name: 'brand',
-                description: 'search by product brand ids',
+                description: 'search by brand slug',
               },
             ],
           ],
-          filtered: {
-            categories: {
-              1: [
-                {
-                  name: 'categories',
-                  type: 'option',
-                  label: 'گروه اصلی',
-                  dynamic: true,
-                  db_name: 'category',
-                  description: 'search by product category ids',
-                },
-              ],
-              data: { 18: 'لپ تاپ و الترابوک' },
-            },
-          },
         },
       },
     });
@@ -438,7 +642,5 @@ router.get('/:id/reviews', async (req, res) => {
     },
   });
 });
-
-module.exports = router;
 
 module.exports = router;

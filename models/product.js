@@ -94,10 +94,6 @@ const productSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
-      isAd: {
-        type: Boolean,
-        default: false,
-      },
     },
     // Status
     status: {

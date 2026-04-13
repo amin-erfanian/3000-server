@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/product');
+const Variant = require('../models/variant');
 const CustomError = require('../classes/custom-error');
 
 // GET all products
@@ -61,6 +62,205 @@ router.get('/', async (req, res) => {
       pages: Math.ceil(total / parseInt(limit)),
     },
   });
+});
+
+router.get('/list', async (req, res) => {
+  try {
+    // Parse filters
+    const {
+      page = 1,
+      limit = 10,
+      sort_column = 'createdAt',
+      sort_order = 'desc',
+
+      categories,
+      brands,
+      statuses,
+      colors,
+      fake,
+      keyword,
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    // Build product/variant filters
+    const productMatch = {};
+    const variantMatch = {};
+
+    if (categories) productMatch['product.category'] = { $in: categories.split(',') };
+    if (brands) productMatch['product.brand'] = { $in: brands.split(',') };
+    if (fake !== undefined) productMatch['product.properties.isFake'] = fake === 'true';
+
+    if (keyword) {
+      productMatch['product.titleFa'] = {
+        $regex: keyword,
+        $options: 'i',
+      };
+    }
+    if (statuses) variantMatch.status = { $in: statuses.split(',') };
+    if (colors) variantMatch.color = { $in: colors.split(',') };
+
+    // Aggregate Variants rooted pipeline (faster)
+    const pipeline = [
+      {
+        $match: {
+          ...variantMatch,
+        },
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'product',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      { $unwind: '$product' },
+      {
+        $match: productMatch,
+      },
+      {
+        $lookup: {
+          from: 'brands',
+          localField: 'product.brand',
+          foreignField: '_id',
+          as: 'brand',
+        },
+      },
+      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'product.category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          'product.titleFa': 1,
+          'product.images.main.url': 1,
+          status: 1,
+          price: 1,
+          color: 1,
+          'brand.titleFa': 1,
+          'category.titleFa': 1,
+        },
+      },
+      { $skip: parseInt(skip) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const items = await Variant.aggregate(pipeline);
+    const total_rows = await Variant.countDocuments({
+      ...variantMatch,
+    });
+
+    // Transform DB docs → required shape
+    const formatted = items.map((v) => ({
+      id: v._id,
+      title: v.product?.titleFa,
+      status: v.status,
+      min_price: v.price || 0,
+      commission: {
+        canSell: false,
+        commission: 0.02,
+        type: 'document',
+        message: [
+          'برای درج کالا در این گروه کالایی نیاز به ارایه مدرک است، برای اطلاعات بیشتر به بخش مدارک فروشنده مراجعه کنید.',
+        ],
+      },
+      market_price: 0,
+      image_src: v.product?.images?.main?.url || null,
+      price_type: { recommended: 'پیشنهادی' },
+      number_of_sellers: 1,
+      is_selling: false,
+      brand: v.brand?.titleFa || '',
+      category: v.category?.titleFa || '',
+      category_price_configs: {
+        order_limit_minimum: 1,
+        order_limit_maximum: 1000,
+      },
+      tags: [],
+      demand_count: 0,
+      site: 'digikala',
+    }));
+
+    // Response payload
+    res.json({
+      status: 'ok',
+      data: {
+        sort_data: {
+          sort_column,
+          sort_order,
+          sort_columns: [sort_column],
+        },
+        pager: {
+          page: parseInt(page),
+          item_per_page: parseInt(limit),
+          total_pages: Math.ceil(total_rows / limit),
+          total_rows,
+        },
+        form_data: {
+          categories: categories || '',
+        },
+        items: formatted,
+        meta_data: {
+          filters: [
+            [
+              {
+                name: 'keyword',
+                type: 'string',
+                required: 'true',
+                description: 'search by product name',
+              },
+            ],
+            [
+              {
+                name: 'categories',
+                type: 'option',
+                label: 'گروه اصلی',
+                dynamic: true,
+                db_name: 'category',
+                description: 'search by product category ids',
+                values: [{ 18: 'لپ تاپ و الترابوک' }],
+              },
+            ],
+            [
+              {
+                name: 'brands',
+                type: 'option',
+                label: 'برند کالا',
+                dynamic: true,
+                db_name: 'brand',
+                description: 'search by product brand ids',
+              },
+            ],
+          ],
+          filtered: {
+            categories: {
+              1: [
+                {
+                  name: 'categories',
+                  type: 'option',
+                  label: 'گروه اصلی',
+                  dynamic: true,
+                  db_name: 'category',
+                  description: 'search by product category ids',
+                },
+              ],
+              data: { 18: 'لپ تاپ و الترابوک' },
+            },
+          },
+        },
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
 });
 
 // GET product by ID
@@ -238,5 +438,7 @@ router.get('/:id/reviews', async (req, res) => {
     },
   });
 });
+
+module.exports = router;
 
 module.exports = router;

@@ -5,7 +5,12 @@ const VerificationCodeSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
-      unique: true,
+    },
+    panel: {
+      type: String,
+      enum: ['user', 'seller', 'admin'],
+      default: 'user',
+      required: true,
     },
     code: {
       type: String,
@@ -24,5 +29,7 @@ const VerificationCodeSchema = new mongoose.Schema(
   },
   { versionKey: false },
 );
+
+VerificationCodeSchema.index({ phone: 1, panel: 1 }, { unique: true });
 
 module.exports = mongoose.model('VerificationCode', VerificationCodeSchema);

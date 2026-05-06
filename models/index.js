@@ -15,6 +15,7 @@ const Color = require('./color');
 const Product = require('./product');
 const Review = require('./review');
 const Seller = require('./seller');
+const Admin = require('./admin');
 const Variant = require('./variant');
 const Warranty = require('./warranty');
 
@@ -37,6 +38,7 @@ module.exports = {
   Product,
   Review,
   Seller,
+  Admin,
   Variant,
   Warranty,
 };

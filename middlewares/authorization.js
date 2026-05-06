@@ -20,7 +20,17 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
-    req.seller = { ...decodedToken, _id: decodedToken._id ?? decodedToken.id };
+    const authUser = { ...decodedToken, _id: decodedToken._id ?? decodedToken.id };
+    req.auth = authUser;
+
+    if (authUser.role === 'seller') {
+      req.seller = authUser;
+    } else if (authUser.role === 'admin') {
+      req.admin = authUser;
+    } else if (authUser.role === 'user') {
+      req.user = authUser;
+    }
+
     next();
   } catch (error) {
     throw new CustomError(

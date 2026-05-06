@@ -68,6 +68,19 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
 
+    // Pricing
+    referencePrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    commission: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+
     // Images (array of URLs)
     images: {
       main: imageSchema,
@@ -87,7 +100,11 @@ const productSchema = new mongoose.Schema(
       default: [],
     },
 
-    // Rating (aggregated from reviews)
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Seller',
+    },
+
     rating: {
       average: {
         type: Number,
@@ -111,11 +128,23 @@ const productSchema = new mongoose.Schema(
         default: false,
       },
     },
-    // Status
+
+    minBasketQuantity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    marketStatus: {
+      type: String,
+      enum: ['marketable', 'non-marketable', 'limited', 'pre-order'],
+      default: 'marketable',
+    },
+
     status: {
       type: String,
       enum: ['draft', 'pending', 'active', 'inactive'],
-      default: 'draft',
+      default: 'pending',
     },
     isActive: {
       type: Boolean,
@@ -145,5 +174,4 @@ productSchema.virtual('reviews', {
   foreignField: 'product',
 });
 
-const Product = mongoose.model('Product', productSchema);
-module.exports = Product;
+module.exports = mongoose.models.Product || mongoose.model('Product', productSchema);

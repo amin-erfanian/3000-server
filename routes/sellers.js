@@ -22,20 +22,13 @@ router.get('/', async (req, res) => {
   }
 
   if (search) {
-    filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { code: { $regex: search, $options: 'i' } },
-    ];
+    filter.$or = [{ title: { $regex: search, $options: 'i' } }, { code: { $regex: search, $options: 'i' } }];
   }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const [sellers, total] = await Promise.all([
-    Seller.find(filter)
-      .select('-user')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit)),
+    Seller.find(filter).select('-user').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
     Seller.countDocuments(filter),
   ]);
 
@@ -94,7 +87,7 @@ router.get('/code/:code', async (req, res) => {
 
 // GET seller products
 router.get('/:id/variants', async (req, res) => {
-  const Variant = require('../models/variant');
+  const Variant = require('../models/Variant');
   const { page = 1, limit = 20, status } = req.query;
 
   const seller = await Seller.findById(req.params.id);
@@ -136,4 +129,3 @@ router.get('/:id/variants', async (req, res) => {
 });
 
 module.exports = router;
-

@@ -3,8 +3,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
-const Product = require('../models/product');
-const Variant = require('../models/variant');
+const Product = require('../models/Product');
+const Variant = require('../models/Variant');
 const CustomError = require('../classes/custom-error');
 
 const normalizePersian = require('../utilities/normalize-persian');
@@ -709,7 +709,7 @@ router.get('/category/:slug', async (req, res) => {
 
 // GET product variants
 router.get('/:id/variants', async (req, res) => {
-  const Variant = require('../models/variant');
+  const Variant = require('../models/Variant');
 
   const product = await Product.findById(req.params.id);
 

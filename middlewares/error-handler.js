@@ -5,6 +5,8 @@ const logger = require('../classes/custom-logger');
 
 const UTILS_CONFIG = { depth: null, compact: true, breakLength: Infinity };
 const errorHandlerMiddleware = (error, req, res, _next) => {
+  console.error(error);
+
   if (error instanceof CustomError) {
     logger.error(
       `[${error.statusCode} - ${error.errorCode}] ${error.message.en} ${

@@ -1,13 +1,13 @@
 /**
  * Seed Products
  * Run: node seeds/products.js
- * 
+ *
  * 30 products distributed across categories and brands
  */
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Product = require('../models/product');
+const Product = require('../models/Product');
 const Category = require('../models/category');
 const Brand = require('../models/brand');
 
@@ -24,10 +24,14 @@ const PRODUCTS = [
     titleFa: 'گوشی موبایل اپل مدل iPhone 15 Pro Max ظرفیت 256 گیگابایت',
     titleEn: 'Apple iPhone 15 Pro Max 256GB',
     slug: 'apple-iphone-15-pro-max-256gb',
-    description: 'آیفون 15 پرو مکس، پرچمدار جدید اپل با تراشه A17 Pro و دوربین 48 مگاپیکسلی. طراحی تیتانیومی و نمایشگر Super Retina XDR.',
+    description:
+      'آیفون 15 پرو مکس، پرچمدار جدید اپل با تراشه A17 Pro و دوربین 48 مگاپیکسلی. طراحی تیتانیومی و نمایشگر Super Retina XDR.',
     categorySlug: 'mobile-phone',
     brandSlug: 'apple',
-    images: { main: { url: '/images/products/iphone-15-pro-max.jpg', alt: 'iPhone 15 Pro Max' }, gallery: [] },
+    images: {
+      main: { url: '/images/products/iphone-15-pro-max.jpg', alt: 'iPhone 15 Pro Max' },
+      gallery: [],
+    },
     rating: { average: 4.8, count: 1250 },
     status: 'active',
   },
@@ -71,7 +75,10 @@ const PRODUCTS = [
     description: 'ردمی نوت 13 پرو با دوربین 200 مگاپیکسلی و شارژ سریع 67 واتی.',
     categorySlug: 'mobile-phone',
     brandSlug: 'xiaomi',
-    images: { main: { url: '/images/products/redmi-note-13-pro.jpg', alt: 'Redmi Note 13 Pro' }, gallery: [] },
+    images: {
+      main: { url: '/images/products/redmi-note-13-pro.jpg', alt: 'Redmi Note 13 Pro' },
+      gallery: [],
+    },
     rating: { average: 4.5, count: 420 },
     status: 'active',
   },
@@ -242,7 +249,10 @@ const PRODUCTS = [
     description: 'گلکسی واچ 6 کلاسیک با بزل چرخشی و سنسور BioActive.',
     categorySlug: 'samsung-watch',
     brandSlug: 'samsung',
-    images: { main: { url: '/images/products/galaxy-watch6.jpg', alt: 'Galaxy Watch6 Classic' }, gallery: [] },
+    images: {
+      main: { url: '/images/products/galaxy-watch6.jpg', alt: 'Galaxy Watch6 Classic' },
+      gallery: [],
+    },
     rating: { average: 4.5, count: 410 },
     status: 'active',
   },
@@ -277,7 +287,10 @@ const PRODUCTS = [
     description: 'گلکسی تب S9 اولترا با نمایشگر 14.6 اینچی و قلم S Pen.',
     categorySlug: 'tablet-samsung',
     brandSlug: 'samsung',
-    images: { main: { url: '/images/products/galaxy-tab-s9-ultra.jpg', alt: 'Galaxy Tab S9 Ultra' }, gallery: [] },
+    images: {
+      main: { url: '/images/products/galaxy-tab-s9-ultra.jpg', alt: 'Galaxy Tab S9 Ultra' },
+      gallery: [],
+    },
     rating: { average: 4.6, count: 210 },
     status: 'active',
   },
@@ -360,7 +373,10 @@ const PRODUCTS = [
     description: 'کفش دویدن آدیداس با فناوری Boost برای بازگشت انرژی.',
     categorySlug: 'sports-shoes',
     brandSlug: 'adidas',
-    images: { main: { url: '/images/products/adidas-ultraboost-23.jpg', alt: 'Adidas Ultraboost 23' }, gallery: [] },
+    images: {
+      main: { url: '/images/products/adidas-ultraboost-23.jpg', alt: 'Adidas Ultraboost 23' },
+      gallery: [],
+    },
     rating: { average: 4.6, count: 720 },
     status: 'active',
   },
@@ -421,7 +437,6 @@ async function seedProducts() {
     const totalCount = await Product.countDocuments();
     console.log(`\n✅ Done! Inserted ${insertedCount} products`);
     console.log(`📊 Total products: ${totalCount}`);
-
   } catch (error) {
     console.error('❌ Error:', error.message);
   } finally {
@@ -434,4 +449,3 @@ module.exports = { PRODUCTS, seedProducts };
 if (require.main === module) {
   seedProducts();
 }
-

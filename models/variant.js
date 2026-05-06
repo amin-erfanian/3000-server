@@ -102,6 +102,84 @@ const variantSchema = new mongoose.Schema(
         default: [],
       },
     },
+
+    // Approval/Rejection fields
+    rejectionReason: {
+      field: {
+        type: String,
+        default: '',
+      },
+      message: {
+        type: String,
+        default: '',
+      },
+      rejectedAt: {
+        type: Date,
+      },
+      rejectedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin',
+      },
+    },
+
+    // Field-specific rejection issues
+    rejectionIssues: {
+      type: [
+        {
+          field: String,
+          message: String,
+        },
+      ],
+      default: [],
+    },
+
+    approvalHistory: {
+      type: [
+        {
+          action: {
+            type: String,
+            enum: ['approved', 'rejected'],
+            required: true,
+          },
+          performedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Admin',
+            required: true,
+          },
+          performedAt: {
+            type: Date,
+            default: Date.now,
+          },
+          reason: {
+            type: String,
+            default: '',
+          },
+          field: {
+            type: String,
+            default: '',
+          },
+          issues: {
+            type: [
+              {
+                field: String,
+                message: String,
+              },
+            ],
+            default: [],
+          },
+        },
+      ],
+      default: [],
+    },
+
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+    },
+    approvedAt: {
+      type: Date,
+    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -121,5 +199,4 @@ variantSchema.virtual('inStock').get(function () {
   return this.stock > 0;
 });
 
-const Variant = mongoose.model('Variant', variantSchema);
-module.exports = Variant;
+module.exports = mongoose.models.Variant || mongoose.model('Variant', variantSchema);

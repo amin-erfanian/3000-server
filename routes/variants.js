@@ -1,8 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const Variant = require('../models/variant');
-const Product = require('../models/product');
+const Variant = require('../models/Variant');
+const Product = require('../models/Product');
 const CustomError = require('../classes/custom-error');
 const authMiddleware = require('../middlewares/authorization');
 

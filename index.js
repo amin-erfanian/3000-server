@@ -43,6 +43,14 @@ const variantRoutes = require('./routes/variants');
 const warrantyRoutes = require('./routes/warranties');
 const categoryRoutes = require('./routes/categories');
 
+// Modular panel routes
+const buyerProductRoutes = require('./routes/buyer/products');
+const buyerVariantRoutes = require('./routes/buyer/variants');
+const sellerProductRoutes = require('./routes/seller/products');
+const sellerVariantRoutes = require('./routes/seller/variants');
+const adminProductRoutes = require('./routes/admin/products');
+const adminVariantRoutes = require('./routes/admin/variants');
+
 app.use('/auth', authRoutes);
 
 // E-commerce routes (public GET routes)
@@ -54,6 +62,14 @@ app.use('/sellers', sellerRoutes);
 app.use('/variants', variantRoutes);
 app.use('/warranties', warrantyRoutes);
 app.use('/categories', categoryRoutes);
+
+// Modular panel routes
+app.use('/buyer/products', buyerProductRoutes);
+app.use('/buyer/variants', buyerVariantRoutes);
+app.use('/seller/products', sellerProductRoutes);
+app.use('/seller/variants', sellerVariantRoutes);
+app.use('/admin/products', adminProductRoutes);
+app.use('/admin/variants', adminVariantRoutes);
 
 app.use(errorHandlerMiddleware);
 

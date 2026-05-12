@@ -29,8 +29,7 @@ const variantSchema = new mongoose.Schema(
       default: '',
     },
 
-    // Size/Theme attributes
-    size: {
+    sellerVariantId: {
       type: String,
       default: '',
     },
@@ -49,22 +48,19 @@ const variantSchema = new mongoose.Schema(
     },
     originalPrice: {
       type: Number,
-      min: 0,
+      default: null,
     },
 
     // Stock
     stock: {
       type: Number,
-      default: 0,
+      required: true,
       min: 0,
     },
-
-    // Status
-    status: {
-      type: String,
-      enum: ['marketable', 'out_of_stock', 'discontinued', 'pending'],
-      default: 'pending',
-      index: true,
+    orderLimit: {
+      type: Number,
+      required: true,
+      min: 1,
     },
 
     // Shipping
@@ -72,34 +68,34 @@ const variantSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
     shipmentMethods: {
-      description: {
-        type: String,
-        default: '',
-      },
-      hasLeadTime: {
+      shipMarket: {
         type: Boolean,
         default: false,
       },
-      providers: {
-        type: [
-          {
-            type: {
-              type: String,
-              enum: ['3000', 'seller', 'express', 'post'],
-            },
-            title: String,
-            description: String,
-            shippingMode: String,
-            deliveryDay: String,
-            price: {
-              value: Number,
-              isFree: Boolean,
-              text: String,
-            },
-          },
-        ],
-        default: [],
+      shipSeller: {
+        type: Boolean,
+        default: false,
+      },
+      threeHour: {
+        type: Boolean,
+        default: false,
+      },
+      warehouseDelivery: {
+        type: String,
+        enum: ['1day', '2day', null],
+        default: null,
+      },
+      buyerDelivery: {
+        type: String,
+        enum: ['sameDay', '1day', '2day', null],
+        default: null,
+      },
+      timeRange: {
+        type: String,
+        enum: ['2hour', '3hour', '6hour', '9hour', '12hour', null],
+        default: null,
       },
     },
 
@@ -122,7 +118,6 @@ const variantSchema = new mongoose.Schema(
       },
     },
 
-    // Field-specific rejection issues
     rejectionIssues: {
       type: [
         {
@@ -184,6 +179,12 @@ const variantSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
   },
   {
     versionKey: false,
@@ -191,10 +192,8 @@ const variantSchema = new mongoose.Schema(
   },
 );
 
-// Compound index for product-seller combination
 variantSchema.index({ product: 1, seller: 1 });
 
-// Virtual for stock status
 variantSchema.virtual('inStock').get(function () {
   return this.stock > 0;
 });

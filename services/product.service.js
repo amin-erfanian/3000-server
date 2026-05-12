@@ -285,7 +285,9 @@ class ProductService {
 
       const variants = await Variant.find(filters)
         .populate('seller', 'storeName email phone')
-        .populate('product', 'titleFa titleEn images') // add images
+        .populate('product', 'titleFa titleEn images')
+        .populate('color')
+        .populate('warranty')
         .sort({ createdAt: -1 }) // newest first
         .lean();
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Color = require('../models/color');
+const Color = require('../models/Color');
 const CustomError = require('../classes/custom-error');
 
 // GET all colors
@@ -53,4 +53,3 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

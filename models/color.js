@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 
 const colorSchema = new mongoose.Schema(
   {
-    title: {
+    name: {
       type: String,
       required: true,
     },
-    titleEn: {
+    nameEn: {
       type: String,
       default: '',
     },

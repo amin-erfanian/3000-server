@@ -156,86 +156,6 @@ class ProductService {
   }
 
   /**
-   * دریافت محصولات بر اساس slug دسته‌بندی
-   */
-  async getProductsByCategorySlug(categorySlug, options = {}) {
-    try {
-      const Category = require('../models/Category');
-      const category = await Category.findOne({ slug: categorySlug }).lean();
-
-      if (!category) {
-        throw new Error('دسته‌بندی یافت نشد');
-      }
-
-      const filters = {
-        category: category._id,
-        isActive: true,
-        status: 'active',
-      };
-
-      const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
-
-      const result = await this.getProducts(filters, { page, limit }, { sortBy, sortOrder });
-
-      return {
-        ...result,
-        category,
-      };
-    } catch (error) {
-      throw new Error(`خطا در دریافت محصولات دسته‌بندی: ${error.message}`);
-    }
-  }
-
-  /**
-   * دریافت نظرات محصول
-   */
-  async getProductReviews(productId, options = {}) {
-    try {
-      const Review = require('../models/Review');
-      const { page = 1, limit = 10, status = 'approved' } = options;
-
-      if (!mongoose.Types.ObjectId.isValid(productId)) {
-        throw new Error('شناسه محصول نامعتبر است');
-      }
-
-      const product = await Product.findById(productId);
-      if (!product) {
-        throw new Error('محصول یافت نشد');
-      }
-
-      const filter = { product: productId };
-      if (status) {
-        filter.status = status;
-      }
-
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-
-      const [reviews, total] = await Promise.all([
-        Review.find(filter)
-          .populate('user', 'profile.firstName')
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(parseInt(limit))
-          .lean(),
-        Review.countDocuments(filter),
-      ]);
-
-      return {
-        success: true,
-        data: reviews,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / parseInt(limit)),
-        },
-      };
-    } catch (error) {
-      throw new Error(`خطا در دریافت نظرات: ${error.message}`);
-    }
-  }
-
-  /**
    * دریافت محصولات یک فروشنده خاص
    */
   async getSellerProducts(sellerId, filters = {}, pagination = {}, sort = {}) {
@@ -500,25 +420,30 @@ class ProductService {
   }
 
   /**
-   * تایید variant (Admin)
+   * Approve product (admin)
    */
-  async approveVariant(variantId, adminId, note = '') {
+  async approveVariant(variantId, adminId, note) {
     try {
       if (!mongoose.Types.ObjectId.isValid(variantId)) {
         throw new Error('شناسه variant نامعتبر است');
       }
 
+      const approvalData = {
+        action: 'approved',
+        admin: adminId,
+        timestamp: new Date(),
+      };
+
+      if (note) {
+        approvalData.note = note;
+      }
+
       const variant = await Variant.findByIdAndUpdate(
         variantId,
         {
-          $set: { status: 'active' },
+          $set: { status: 'approved', isActive: true },
           $push: {
-            approvalHistory: {
-              action: 'approved',
-              admin: adminId,
-              note,
-              timestamp: new Date(),
-            },
+            approvalHistory: approvalData,
           },
         },
         { new: true },
@@ -531,7 +456,7 @@ class ProductService {
       return {
         success: true,
         data: variant,
-        message: 'variant با موفقیت تایید شد',
+        message: 'variant تایید شد',
       };
     } catch (error) {
       throw new Error(`خطا در تایید variant: ${error.message}`);
@@ -539,9 +464,9 @@ class ProductService {
   }
 
   /**
-   * رد variant (Admin)
+   * Reject variant (admin)
    */
-  async rejectVariant(variantId, adminId, reason) {
+  async rejectVariant(variantId, adminId, reason, issues) {
     try {
       if (!mongoose.Types.ObjectId.isValid(variantId)) {
         throw new Error('شناسه variant نامعتبر است');
@@ -551,20 +476,27 @@ class ProductService {
         throw new Error('دلیل رد variant الزامی است');
       }
 
+      const rejectionData = {
+        action: 'rejected',
+        admin: adminId,
+        note: reason,
+        timestamp: new Date(),
+      };
+
+      if (issues && Array.isArray(issues) && issues.length > 0) {
+        rejectionData.issues = issues;
+      }
+
       const variant = await Variant.findByIdAndUpdate(
         variantId,
         {
           $set: {
             status: 'rejected',
             rejectionReason: reason,
+            ...(issues && issues.length > 0 && { rejectionIssues: issues }),
           },
           $push: {
-            approvalHistory: {
-              action: 'rejected',
-              admin: adminId,
-              note: reason,
-              timestamp: new Date(),
-            },
+            approvalHistory: rejectionData,
           },
         },
         { new: true },
@@ -585,37 +517,12 @@ class ProductService {
   }
 
   /**
-   * دریافت variantهای در انتظار تایید
+   * Get pending variants (admin)
    */
-  async getPendingVariants(pagination = {}, sort = {}) {
+  async getPendingProducts(page = 1, limit = 20) {
     try {
-      const { page = 1, limit = 20 } = pagination;
-      const { sortBy = 'createdAt', sortOrder = 'desc' } = sort;
-
-      const skip = (page - 1) * limit;
-      const sortObj = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
-
-      const [variants, total] = await Promise.all([
-        Variant.find({ status: 'pending' })
-          .populate('product', 'titleFa titleEn images')
-          .populate('seller', 'storeName email phone')
-          .sort(sortObj)
-          .skip(skip)
-          .limit(parseInt(limit))
-          .lean(),
-        Variant.countDocuments({ status: 'pending' }),
-      ]);
-
-      return {
-        success: true,
-        data: variants,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      };
+      const filters = { status: 'pending' };
+      return await this.getProducts(filters, { page, limit });
     } catch (error) {
       throw new Error(`خطا در دریافت variantهای در انتظار: ${error.message}`);
     }

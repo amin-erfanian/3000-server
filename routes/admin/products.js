@@ -8,6 +8,15 @@ const roleMiddleware = require('../../middlewares/role');
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin']));
 
+router.get('/', async (req, res, next) => {
+  try {
+    const result = await productService.getPendingProducts();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * @route   GET /api/admin/products/:id
  * @desc    Get product details (for viewing variant's product info)

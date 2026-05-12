@@ -155,8 +155,7 @@ router.post('/admin/sign-in', async (req, res) => {
     });
   }
 
-  const isMatch = await admin.matchPassword(password);
-  if (!isMatch) {
+  if (admin.password !== password) {
     throw new CustomError(401, 'INVALID_CREDENTIALS', {
       fa: 'اطلاعات ورود نامعتبر است.',
       en: 'Invalid credentials.',

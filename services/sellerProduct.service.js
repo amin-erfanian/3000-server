@@ -27,8 +27,8 @@ class SellerProductService {
         throw new Error('محصول غیرفعال است');
       }
 
-      if (product.status !== 'active') {
-        throw new Error('وضعیت محصول فعال نیست');
+      if (product.status !== 'approved') {
+        throw new Error('وضعیت محصول تایید نشده است');
       }
 
       if (product.marketStatus !== 'marketable') {
@@ -49,7 +49,6 @@ class SellerProductService {
       const sellerProduct = new SellerProduct({
         seller: sellerId,
         product: productId,
-        status: product.status,
       });
 
       await sellerProduct.save();
@@ -185,35 +184,6 @@ class SellerProductService {
       };
     } catch (error) {
       throw new Error(`خطا در دریافت محصول: ${error.message}`);
-    }
-  }
-
-  /**
-   * تغییر وضعیت SellerProduct (فعال/غیرفعال کردن توسط فروشنده)
-   */
-  async updateSellerProductStatus(sellerProductId, sellerId, newStatus) {
-    try {
-      if (!['active', 'inactive'].includes(newStatus)) {
-        throw new Error('وضعیت نامعتبر است');
-      }
-
-      const sellerProduct = await SellerProduct.findOneAndUpdate(
-        { _id: sellerProductId, seller: sellerId },
-        { $set: { status: newStatus } },
-        { new: true },
-      ).populate('product', 'titleFa titleEn');
-
-      if (!sellerProduct) {
-        throw new Error('محصول یافت نشد');
-      }
-
-      return {
-        success: true,
-        data: sellerProduct,
-        message: `وضعیت محصول به ${newStatus === 'active' ? 'فعال' : 'غیرفعال'} تغییر یافت`,
-      };
-    } catch (error) {
-      throw new Error(`خطا در تغییر وضعیت: ${error.message}`);
     }
   }
 

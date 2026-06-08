@@ -475,7 +475,7 @@ router.get('/seller', authMiddleware, async (req, res) => {
       limit = 10,
       sort_column = 'createdAt',
       sort_order = 'desc',
-      status, // draft | pending | active | inactive
+      status, // draft | pending | approved | rejected
       keyword,
     } = req.query;
 
@@ -533,7 +533,7 @@ router.get('/seller', authMiddleware, async (req, res) => {
         title: p.titleFa || p.titleEn || '',
         title_en: p.titleEn || '',
         slug: p.slug,
-        status: p.status, // draft | pending | active | inactive
+        status: p.status, // draft | pending | approved | rejected
         moderation_status: p.status,
         is_owner: true,
         fake: p.properties?.isFake ?? false,
@@ -576,7 +576,7 @@ router.get('/seller', authMiddleware, async (req, res) => {
               name: 'status',
               type: 'option',
               label: 'وضعیت',
-              options: ['draft', 'pending', 'active', 'inactive'],
+              options: ['draft', 'pending', 'approved', 'rejected'],
             },
             {
               name: 'multi_search',

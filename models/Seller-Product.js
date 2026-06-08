@@ -14,11 +14,6 @@ const sellerProductSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    status: {
-      type: String,
-      enum: ['draft', 'active', 'inactive'],
-      default: 'draft',
-    },
     createdAt: {
       type: Date,
       default: Date.now,

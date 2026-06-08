@@ -12,7 +12,7 @@ router.get('/', async (req, res, next) => {
   try {
     const filters = {
       isActive: true,
-      status: 'active',
+      status: 'approved',
     };
 
     // filters
@@ -78,7 +78,7 @@ router.get('/slug/:slug', async (req, res, next) => {
   try {
     const result = await productService.getProductBySlug(req.params.slug);
 
-    if (!result.data.isActive || result.data.status !== 'active') {
+    if (!result.data.isActive || result.data.status !== 'approved') {
       return res.status(404).json({
         success: false,
         message: 'محصول یافت نشد',
@@ -119,7 +119,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const result = await productService.getProductById(req.params.id);
 
-    if (!result.data.isActive || result.data.status !== 'active') {
+    if (!result.data.isActive || result.data.status !== 'approved') {
       return res.status(404).json({
         success: false,
         message: 'محصول یافت نشد',

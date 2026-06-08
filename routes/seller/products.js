@@ -77,7 +77,8 @@ router.get('/catalog', async (req, res) => {
     const basePipeline = [
       {
         $match: {
-          status: 'active',
+          status: 'approved',
+          isActive: true,
           ...(keyword && {
             $or: [
               { titleFa: { $regex: normalizePersian(keyword), $options: 'i' } },
@@ -296,7 +297,8 @@ router.post('/create', async (req, res, next) => {
       minBasketQuantity: minBasketQuantity || 1,
       marketStatus: marketStatus || 'marketable',
       createdBy: sellerId,
-      status: 'pending', // Needs admin approval
+      status: 'pending',
+      isActive: false,
     };
 
     // Create product using service
@@ -306,9 +308,24 @@ router.post('/create', async (req, res, next) => {
       return res.status(400).json(result);
     }
 
+    let sellerProduct = await SellerProduct.findOne({
+      seller: sellerId,
+      product: result.data._id,
+    }).lean();
+
+    if (!sellerProduct) {
+      sellerProduct = await SellerProduct.create({
+        seller: sellerId,
+        product: result.data._id,
+      });
+    }
+
     res.status(201).json({
       success: true,
-      data: result.data,
+      data: {
+        product: result.data,
+        sellerProductId: sellerProduct._id,
+      },
       message: 'محصول با موفقیت ایجاد شد و در انتظار تایید است',
     });
   } catch (error) {
@@ -354,7 +371,7 @@ router.get('/my-catalog', async (req, res) => {
       categories,
       brands,
       keyword,
-      status, // وضعیت SellerProduct: draft, active, inactive
+      status, // وضعیت Product: draft, pending, approved, rejected
     } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
@@ -365,7 +382,6 @@ router.get('/my-catalog', async (req, res) => {
       {
         $match: {
           seller: new mongoose.Types.ObjectId(sellerId),
-          ...(status && { status }), // فیلتر وضعیت SellerProduct
         },
       },
       // Join با Product
@@ -381,6 +397,7 @@ router.get('/my-catalog', async (req, res) => {
       // فیلتر جستجو
       {
         $match: {
+          ...(status && { 'product.status': status }),
           ...(keyword && {
             $or: [
               { 'product.titleFa': { $regex: normalizePersian(keyword), $options: 'i' } },
@@ -436,7 +453,6 @@ router.get('/my-catalog', async (req, res) => {
         {
           $project: {
             _id: 1,
-            status: 1, // وضعیت SellerProduct
             createdAt: 1,
             updatedAt: 1,
             'product._id': 1,
@@ -478,7 +494,6 @@ router.get('/my-catalog', async (req, res) => {
           brand: sp.brand?.titleFa || '',
           category: sp.category?.titleFa || '',
           product_status: sp.product.status, // وضعیت محصول در کاتالوگ
-          seller_product_status: sp.status, // draft/active/inactive
           market_status: sp.product.marketStatus,
           min_basket_quantity: sp.product.minBasketQuantity || 1,
           variant_count: sp.variant_count, // تعداد واریانت‌های این فروشنده

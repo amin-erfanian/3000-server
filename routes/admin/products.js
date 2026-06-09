@@ -17,56 +17,25 @@ router.get('/', async (req, res, next) => {
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const basePipeline = [
-      {
-        $match: {
-          status: 'pending',
-        },
-      },
-      {
-        $lookup: {
-          from: 'brands',
-          localField: 'brand',
-          foreignField: '_id',
-          as: 'brand',
-        },
-      },
-      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'category',
-        },
-      },
-      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-    ];
+    const filters = { status: 'pending' };
+    const sort = { [sort_column]: sort_order === 'asc' ? 1 : -1 };
 
-    const [items, countResult] = await Promise.all([
-      Product.aggregate([
-        ...basePipeline,
-        {
-          $project: {
-            _id: 1,
-            titleFa: 1,
-            titleEn: 1,
-            'images.main.url': 1,
-            status: 1,
-            marketStatus: 1,
-            minBasketQuantity: 1,
-            brand: { titleFa: '$brand.titleFa', slug: '$brand.slug' },
-            category: { titleFa: '$category.titleFa', slug: '$category.slug' },
-          },
-        },
-        { $sort: { [sort_column]: sort_order === 'asc' ? 1 : -1 } },
-        { $skip: skip },
-        { $limit: limitNum },
-      ]),
-      Product.aggregate([...basePipeline, { $count: 'total' }]),
+    const [items, total_rows] = await Promise.all([
+      Product.find(filters)
+        .populate('brand')
+        .populate('category')
+        .populate('createdBy')
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Product.countDocuments(filters),
     ]);
 
-    const total_rows = countResult[0]?.total || 0;
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      seller: item.createdBy || null,
+    }));
 
     res.json({
       status: 'ok',
@@ -78,16 +47,7 @@ router.get('/', async (req, res, next) => {
           total_pages: Math.ceil(total_rows / limitNum),
           total_rows,
         },
-        items: items.map((p) => ({
-          id: p._id,
-          title: p.titleFa || p.titleEn || '',
-          image_src: p.images?.main?.url || null,
-          brand: p.brand?.titleFa || '',
-          category: p.category?.titleFa || '',
-          status: p.status,
-          market_status: p.marketStatus,
-          min_basket_quantity: p.minBasketQuantity || 1,
-        })),
+        items: normalizedItems,
       },
     });
   } catch (error) {
@@ -123,4 +83,89 @@ router.get('/:productId/variants', async (req, res, next) => {
   }
 });
 
+
+/**
+ * @route   POST /api/admin/products/:productId/approve
+ * @desc    Approve a product
+ * @access  Private (Admin)
+ */
+router.post('/:productId/approve', async (req, res) => {
+  try {
+    const adminId = req.user?._id || req.admin?._id;
+    const { note } = req.body;
+
+    if (!adminId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Admin authentication required',
+      });
+    }
+
+    const result = await productService.approveProduct(req.params.productId, adminId, note);
+
+    res.json({
+      status: 'ok',
+      data: result.data,
+      message: result.message,
+    });
+  } catch (error) {
+    const message = error?.message || 'Failed to approve product';
+    const statusCode = /نامعتبر|invalid|required/i.test(message) ? 400 : /یافت نشد|not found/i.test(message) ? 404 : 500;
+
+    res.status(statusCode).json({
+      status: 'error',
+      message,
+    });
+  }
+});
+
+/**
+ * @route   POST /api/admin/products/:productId/reject
+ * @desc    Reject a product
+ * @access  Private (Admin)
+ * @body    { reason: string, propertyKeys?: string[] }
+ */
+router.post('/:productId/reject', async (req, res) => {
+  try {
+    const adminId = req.user?._id || req.admin?._id;
+    const { reason, propertyKeys } = req.body;
+
+    if (!adminId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Admin authentication required',
+      });
+    }
+
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Rejection reason is required',
+      });
+    }
+
+    if (propertyKeys !== undefined && !Array.isArray(propertyKeys)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'propertyKeys must be an array',
+      });
+    }
+
+    const result = await productService.rejectProduct(req.params.productId, adminId, reason, propertyKeys || []);
+
+    res.json({
+      status: 'ok',
+      data: result.data,
+      message: result.message,
+    });
+  } catch (error) {
+    const message = error?.message || 'Failed to reject product';
+    const statusCode = /نامعتبر|invalid|required/i.test(message) ? 400 : /یافت نشد|not found/i.test(message) ? 404 : 500;
+
+    res.status(statusCode).json({
+      status: 'error',
+      message,
+    });
+  }
+});
 module.exports = router;

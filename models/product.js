@@ -143,9 +143,9 @@ const productSchema = new mongoose.Schema(
 
     // Approval/Rejection fields
     rejectionReason: {
-      field: {
-        type: String,
-        default: '',
+      propertyKeys: {
+        type: [String],
+        default: [],
       },
       message: {
         type: String,

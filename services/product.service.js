@@ -422,100 +422,137 @@ class ProductService {
   /**
    * Approve product (admin)
    */
-  async approveVariant(variantId, adminId, note) {
+  async approveProduct(productId, adminId, note = '') {
     try {
-      if (!mongoose.Types.ObjectId.isValid(variantId)) {
-        throw new Error('شناسه variant نامعتبر است');
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        throw new Error('شناسه محصول نامعتبر است');
       }
 
-      const approvalData = {
+      if (!mongoose.Types.ObjectId.isValid(adminId)) {
+        throw new Error('شناسه ادمین نامعتبر است');
+      }
+
+      const now = new Date();
+      const historyItem = {
         action: 'approved',
-        admin: adminId,
-        timestamp: new Date(),
+        performedBy: adminId,
+        performedAt: now,
+        reason: note?.trim() || '',
       };
 
-      if (note) {
-        approvalData.note = note;
-      }
-
-      const variant = await Variant.findByIdAndUpdate(
-        variantId,
+      const product = await Product.findByIdAndUpdate(
+        productId,
         {
-          $set: { status: 'approved', isActive: true },
+          $set: {
+            status: 'approved',
+            approvedBy: adminId,
+            approvedAt: now,
+            rejectionReason: {
+              propertyKeys: [],
+              message: '',
+            },
+            rejectionIssues: [],
+          },
           $push: {
-            approvalHistory: approvalData,
+            approvalHistory: historyItem,
           },
         },
-        { new: true },
-      ).populate('product', 'titleFa titleEn');
+        { new: true, runValidators: true },
+      ).populate('category', 'titleFa titleEn slug logo')
+        .populate('brand', 'titleFa titleEn slug logo');
 
-      if (!variant) {
-        throw new Error('variant یافت نشد');
+      if (!product) {
+        throw new Error('محصول یافت نشد');
       }
 
       return {
         success: true,
-        data: variant,
-        message: 'variant تایید شد',
+        data: product,
+        message: 'محصول تایید شد',
       };
     } catch (error) {
-      throw new Error(`خطا در تایید variant: ${error.message}`);
+      throw new Error(`خطا در تایید محصول: ${error.message}`);
     }
   }
 
   /**
-   * Reject variant (admin)
+   * Reject product (admin)
    */
-  async rejectVariant(variantId, adminId, reason, issues) {
+  async rejectProduct(productId, adminId, reason, propertyKeys = []) {
     try {
-      if (!mongoose.Types.ObjectId.isValid(variantId)) {
-        throw new Error('شناسه variant نامعتبر است');
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        throw new Error('شناسه محصول نامعتبر است');
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(adminId)) {
+        throw new Error('شناسه ادمین نامعتبر است');
       }
 
       if (!reason || reason.trim() === '') {
-        throw new Error('دلیل رد variant الزامی است');
+        throw new Error('توضیحات رد محصول الزامی است');
       }
 
-      const rejectionData = {
+      if (!Array.isArray(propertyKeys)) {
+        throw new Error('propertyKeys باید آرایه باشد');
+      }
+
+      const normalizedPropertyKeys = propertyKeys
+        .map((key) => String(key || '').trim())
+        .filter(Boolean);
+
+      const normalizedReason = reason.trim();
+      const now = new Date();
+
+      const rejectionIssues = normalizedPropertyKeys.map((field) => ({
+        field,
+        message: normalizedReason,
+      }));
+
+      const historyItem = {
         action: 'rejected',
-        admin: adminId,
-        note: reason,
-        timestamp: new Date(),
+        performedBy: adminId,
+        performedAt: now,
+        reason: normalizedReason,
+        field: normalizedPropertyKeys[0] || '',
+        issues: rejectionIssues,
       };
 
-      if (issues && Array.isArray(issues) && issues.length > 0) {
-        rejectionData.issues = issues;
-      }
-
-      const variant = await Variant.findByIdAndUpdate(
-        variantId,
+      const product = await Product.findByIdAndUpdate(
+        productId,
         {
           $set: {
             status: 'rejected',
-            rejectionReason: reason,
-            ...(issues && issues.length > 0 && { rejectionIssues: issues }),
+            approvedBy: null,
+            approvedAt: null,
+            rejectionReason: {
+              propertyKeys: normalizedPropertyKeys,
+              message: normalizedReason,
+              rejectedAt: now,
+              rejectedBy: adminId,
+            },
+            rejectionIssues,
           },
           $push: {
-            approvalHistory: rejectionData,
+            approvalHistory: historyItem,
           },
         },
-        { new: true },
-      ).populate('product', 'titleFa titleEn');
+        { new: true, runValidators: true },
+      ).populate('category', 'titleFa titleEn slug logo')
+        .populate('brand', 'titleFa titleEn slug logo');
 
-      if (!variant) {
-        throw new Error('variant یافت نشد');
+      if (!product) {
+        throw new Error('محصول یافت نشد');
       }
 
       return {
         success: true,
-        data: variant,
-        message: 'variant رد شد',
+        data: product,
+        message: 'محصول رد شد',
       };
     } catch (error) {
-      throw new Error(`خطا در رد variant: ${error.message}`);
+      throw new Error(`خطا در رد محصول: ${error.message}`);
     }
   }
-
   /**
    * Get pending variants (admin)
    */

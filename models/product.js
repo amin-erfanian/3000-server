@@ -222,10 +222,6 @@ const productSchema = new mongoose.Schema(
       enum: ['draft', 'pending', 'approved', 'rejected'],
       default: 'pending',
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
   },
   {
     versionKey: false,

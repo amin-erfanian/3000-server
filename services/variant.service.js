@@ -109,10 +109,6 @@ class VariantService {
       const { status, page = 1, limit = 20 } = options;
       const filters = { seller: sellerId };
 
-      if (status) {
-        filters.status = status;
-      }
-
       const result = await this.getVariants(filters, {
         page,
         limit,
@@ -235,9 +231,7 @@ class VariantService {
         barcode: data.barcode || '',
         leadTime: data.leadTime || 0,
         discountPercent: data.discountPercent || 0,
-        isActive: data.isActive !== undefined ? data.isActive : true,
         shipmentMethods,
-        status: 'pending',
       });
 
       const variantsCount = await Variant.countDocuments({ product: productId });
@@ -249,7 +243,6 @@ class VariantService {
           product_id: productId,
           product_title: product.titleFa || product.titleEn,
           variants_count: variantsCount,
-          status: variant.status,
           price: variant.price,
           stock: variant.stock,
         },

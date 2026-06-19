@@ -90,8 +90,11 @@ class ProductService {
             marketStatus: 1,
             minBasketQuantity: 1,
             images: 1,
-            referencePrice: { $ifNull: ['$referencePrice', 0] },
-            commission: { $ifNull: ['$commission', 0] },
+            referencePrice: 1,
+            commission: 1,
+            dimensions: 1,
+            weight: 1,
+            description: 1,
             category: {
               _id: 1,
               titleFa: 1,
@@ -396,30 +399,6 @@ class ProductService {
   }
 
   /**
-   * حذف محصول (soft delete)
-   */
-  async deleteProduct(id) {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new Error('شناسه محصول نامعتبر است');
-      }
-
-      const product = await Product.findByIdAndUpdate(id, { $set: { isActive: false } }, { new: true });
-
-      if (!product) {
-        throw new Error('محصول یافت نشد');
-      }
-
-      return {
-        success: true,
-        message: 'محصول با موفقیت غیرفعال شد',
-      };
-    } catch (error) {
-      throw new Error(`خطا در حذف محصول: ${error.message}`);
-    }
-  }
-
-  /**
    * Approve product (admin)
    */
   async approveProduct(productId, adminId, note = '') {
@@ -458,7 +437,8 @@ class ProductService {
           },
         },
         { new: true, runValidators: true },
-      ).populate('category', 'titleFa titleEn slug logo')
+      )
+        .populate('category', 'titleFa titleEn slug logo')
         .populate('brand', 'titleFa titleEn slug logo');
 
       if (!product) {
@@ -496,9 +476,7 @@ class ProductService {
         throw new Error('propertyKeys باید آرایه باشد');
       }
 
-      const normalizedPropertyKeys = propertyKeys
-        .map((key) => String(key || '').trim())
-        .filter(Boolean);
+      const normalizedPropertyKeys = propertyKeys.map((key) => String(key || '').trim()).filter(Boolean);
 
       const normalizedReason = reason.trim();
       const now = new Date();
@@ -537,7 +515,8 @@ class ProductService {
           },
         },
         { new: true, runValidators: true },
-      ).populate('category', 'titleFa titleEn slug logo')
+      )
+        .populate('category', 'titleFa titleEn slug logo')
         .populate('brand', 'titleFa titleEn slug logo');
 
       if (!product) {

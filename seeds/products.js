@@ -427,7 +427,6 @@ async function seedProducts() {
         ...rest,
         category: category._id,
         brand: brand?._id || null,
-        isActive: true,
       });
 
       insertedCount++;

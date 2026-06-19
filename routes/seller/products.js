@@ -78,7 +78,6 @@ router.get('/catalog', async (req, res) => {
       {
         $match: {
           status: 'approved',
-          isActive: true,
           ...(keyword && {
             $or: [
               { titleFa: { $regex: normalizePersian(keyword), $options: 'i' } },
@@ -298,7 +297,6 @@ router.post('/create', async (req, res, next) => {
       marketStatus: marketStatus || 'marketable',
       createdBy: sellerId,
       status: 'pending',
-      isActive: false,
     };
 
     // Create product using service
@@ -327,6 +325,134 @@ router.post('/create', async (req, res, next) => {
         sellerProductId: sellerProduct._id,
       },
       message: 'محصول با موفقیت ایجاد شد و در انتظار تایید است',
+    });
+  } catch (error) {
+    // Handle duplicate slug error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'محصولی با این عنوان قبلاً ثبت شده است',
+      });
+    }
+    next(error);
+  }
+});
+
+/**
+ * @route   PUT /api/seller/products/:productId
+ * @desc    Update an existing product
+ * @access  Private (Seller)
+ */
+router.put('/:productId', async (req, res, next) => {
+  try {
+    const sellerId = req.seller._id;
+    const { productId } = req.params;
+
+    // Verify seller owns this product
+    const sellerProduct = await SellerProduct.findOne({
+      seller: sellerId,
+      product: productId,
+    }).lean();
+
+    if (!sellerProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'محصول یافت نشد یا دسترسی به آن ندارید',
+      });
+    }
+
+    // Extract product data from request
+    const {
+      titleFa,
+      titleEn,
+      description,
+      category,
+      brand,
+      sku,
+      dimensions,
+      weight,
+      referencePrice,
+      commission,
+      images,
+      videos,
+      minBasketQuantity,
+      marketStatus,
+    } = req.body;
+
+    // Validate required fields if provided
+    if (titleFa !== undefined && !titleFa) {
+      return res.status(400).json({
+        success: false,
+        message: 'عنوان فارسی نمی‌تواند خالی باشد',
+      });
+    }
+
+    if (category !== undefined && !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'دسته‌بندی نمی‌تواند خالی باشد',
+      });
+    }
+
+    if (referencePrice !== undefined && (referencePrice === null || referencePrice === '')) {
+      return res.status(400).json({
+        success: false,
+        message: 'قیمت مرجع نمی‌تواند خالی باشد',
+      });
+    }
+
+    if (commission !== undefined && (commission === null || commission === '')) {
+      return res.status(400).json({
+        success: false,
+        message: 'درصد کمیسیون نمی‌تواند خالی باشد',
+      });
+    }
+
+    // Prepare update data
+    const updateData = {
+      status: 'pending',
+    };
+
+    if (titleFa !== undefined) {
+      updateData.titleFa = titleFa;
+      // Regenerate slug if title changed
+      updateData.slug =
+        titleFa
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\u0600-\u06FFa-z0-9\-]/g, '') +
+        '-' +
+        Date.now();
+    }
+
+    if (titleEn !== undefined) updateData.titleEn = titleEn;
+    if (description !== undefined) updateData.description = description;
+    if (category !== undefined) updateData.category = category;
+    if (brand !== undefined) updateData.brand = brand || undefined;
+    if (sku !== undefined) updateData.sku = sku;
+    if (dimensions !== undefined) updateData.dimensions = dimensions;
+    if (weight !== undefined) updateData.weight = weight;
+    if (referencePrice !== undefined) updateData.referencePrice = referencePrice;
+    if (commission !== undefined) updateData.commission = commission;
+    if (images !== undefined) updateData.images = images;
+    if (videos !== undefined) updateData.videos = videos;
+    if (minBasketQuantity !== undefined) updateData.minBasketQuantity = minBasketQuantity;
+    if (marketStatus !== undefined) updateData.marketStatus = marketStatus;
+
+    // Update product using service
+    const result = await productService.updateProduct(productId, updateData);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        product: result.data,
+        sellerProductId: sellerProduct._id,
+      },
+      message: 'محصول با موفقیت به‌روزرسانی شد',
     });
   } catch (error) {
     // Handle duplicate slug error

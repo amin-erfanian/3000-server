@@ -36,10 +36,7 @@ const authRoutes = require('./routes/authentication');
 // E-commerce routes
 const brandRoutes = require('./routes/brands');
 const colorRoutes = require('./routes/colors');
-const productRoutes = require('./routes/products');
 const reviewRoutes = require('./routes/reviews');
-const sellerRoutes = require('./routes/sellers');
-const variantRoutes = require('./routes/variants');
 const warrantyRoutes = require('./routes/warranties');
 const categoryRoutes = require('./routes/categories');
 
@@ -56,10 +53,7 @@ app.use('/auth', authRoutes);
 // E-commerce routes (public GET routes)
 app.use('/brands', brandRoutes);
 app.use('/colors', colorRoutes);
-app.use('/products', productRoutes);
 app.use('/reviews', reviewRoutes);
-app.use('/sellers', sellerRoutes);
-app.use('/variants', variantRoutes);
 app.use('/warranties', warrantyRoutes);
 app.use('/categories', categoryRoutes);
 

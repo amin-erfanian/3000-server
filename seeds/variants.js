@@ -1165,7 +1165,6 @@ async function seedVariants() {
           discountPercent,
           stock: config.stock,
           status: config.status,
-          isActive: true,
         });
 
         insertedCount++;

@@ -98,17 +98,6 @@ const variantSchema = new mongoose.Schema(
         default: null,
       },
     },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-
-    status: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
-    },
   },
   {
     versionKey: false,

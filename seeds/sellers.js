@@ -1,7 +1,7 @@
 /**
  * Seed Sellers
  * Run: node seeds/sellers.js
- * 
+ *
  * Note: Requires users to exist first, or creates dummy user references
  */
 
@@ -221,14 +221,12 @@ async function seedSellers() {
       await Seller.create({
         ...seller,
         user: createUserId(), // Creates dummy user reference
-        isActive: true,
       });
       console.log(`✓ ${seller.title} (${seller.code})`);
     }
 
     const totalCount = await Seller.countDocuments();
     console.log(`\n✅ Done! Total sellers: ${totalCount}`);
-
   } catch (error) {
     console.error('❌ Error:', error.message);
   } finally {
@@ -241,4 +239,3 @@ module.exports = { SELLERS, seedSellers };
 if (require.main === module) {
   seedSellers();
 }
-

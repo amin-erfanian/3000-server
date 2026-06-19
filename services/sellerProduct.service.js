@@ -23,10 +23,6 @@ class SellerProductService {
         throw new Error('محصول در کاتالوگ یافت نشد');
       }
 
-      if (!product.isActive) {
-        throw new Error('محصول غیرفعال است');
-      }
-
       if (product.status !== 'approved') {
         throw new Error('وضعیت محصول تایید نشده است');
       }

@@ -460,6 +460,7 @@ router.get('/my-catalog', async (req, res) => {
             'product.titleEn': 1,
             'product.images.main.url': 1,
             'product.status': 1, // وضعیت محصول در کاتالوگ
+            'product.rejectionReason': 1,
             'product.marketStatus': 1,
             'product.minBasketQuantity': 1,
             brand: { titleFa: '$brand.titleFa', slug: '$brand.slug' },
@@ -498,6 +499,14 @@ router.get('/my-catalog', async (req, res) => {
           min_basket_quantity: sp.product.minBasketQuantity || 1,
           variant_count: sp.variant_count, // تعداد واریانت‌های این فروشنده
           created_at: sp.createdAt,
+          ...(sp.product.status === 'rejected' && {
+            rejectionReason: sp.product.rejectionReason || {
+              propertyKeys: [],
+              message: '',
+              rejectedAt: null,
+              rejectedBy: null,
+            },
+          }),
           updated_at: sp.updatedAt,
         })),
       },

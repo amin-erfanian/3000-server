@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const errorHandlerMiddleware = require('./middlewares/error-handler');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -16,6 +17,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
 mongoose.connect(`mongodb://localhost:${DB_PORT}/3000`, {

@@ -11,6 +11,42 @@ const normalizePersian = require('../../utilities/normalize-persian');
 const sellerProductService = require('../../services/sellerProduct.service');
 const mongoose = require('mongoose');
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Multer configuration for image uploads
+const uploadDir = path.join(__dirname, '../../uploads/products');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `product-${uniqueSuffix}${ext}`);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('فرمت فایل نامعتبر است. فقط jpeg, png و webp مجاز است.'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter,
+});
+
 router.use(authMiddleware);
 router.use(roleMiddleware(['seller']));
 
@@ -154,7 +190,7 @@ router.get('/catalog', async (req, res) => {
             _id: 1,
             titleFa: 1,
             titleEn: 1,
-            'images.main.url': 1,
+            'images.main': 1,
             status: 1,
             marketStatus: 1,
             minBasketQuantity: 1,
@@ -194,7 +230,7 @@ router.get('/catalog', async (req, res) => {
         items: items.map((p) => ({
           id: p._id,
           title: p.titleFa || p.titleEn || '',
-          image_src: p.images?.main?.url || null,
+          image_src: p.images?.main || null,
           brand: p.brand?.titleFa || '',
           category: p.category?.titleFa || '',
           status: p.status,
@@ -278,20 +314,24 @@ router.post('/create', async (req, res, next) => {
       '-' +
       Date.now();
 
+    // Extract IDs if objects were sent
+    const categoryId = typeof category === 'object' ? category._id : category;
+    const brandId = brand ? (typeof brand === 'object' ? brand._id : brand) : undefined;
+
     // Prepare product data
     const productData = {
       titleFa,
       titleEn: titleEn || '',
       slug,
       description: description || '',
-      category,
-      brand: brand || undefined,
+      category: categoryId,
+      brand: brandId,
       sku: sku || '',
       dimensions: dimensions || { length: 0, width: 0, height: 0 },
       weight: weight || 0,
       referencePrice,
       commission,
-      images: images || { main: null, gallery: [] },
+      images: images || { main: '', gallery: [] },
       videos: videos || [],
       minBasketQuantity: minBasketQuantity || 1,
       marketStatus: marketStatus || 'marketable',
@@ -466,6 +506,34 @@ router.put('/:productId', async (req, res, next) => {
   }
 });
 
+router.post('/upload-images', upload.array('images', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'هیچ فایلی آپلود نشده است',
+      });
+    }
+
+    const images = req.files.map((file) => ({
+      url: `/uploads/products/${file.filename}`,
+      filename: file.filename,
+    }));
+
+    res.status(200).json({
+      success: true,
+      images: images.map((img) => img.url),
+      message: 'تصاویر با موفقیت آپلود شدند',
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطا در آپلود تصاویر',
+    });
+  }
+});
+
 router.post('/add', async (req, res) => {
   try {
     const { productId } = req.body;
@@ -584,8 +652,8 @@ router.get('/my-catalog', async (req, res) => {
             'product._id': 1,
             'product.titleFa': 1,
             'product.titleEn': 1,
-            'product.images.main.url': 1,
-            'product.status': 1, // وضعیت محصول در کاتالوگ
+            'product.images.main': 1,
+            'product.status': 1,
             'product.rejectionReason': 1,
             'product.marketStatus': 1,
             'product.minBasketQuantity': 1,
@@ -617,7 +685,7 @@ router.get('/my-catalog', async (req, res) => {
           seller_product_id: sp._id,
           product_id: sp.product._id,
           title: sp.product.titleFa || sp.product.titleEn || '',
-          image_src: sp.product.images?.main?.url || null,
+          image_src: sp.product.images?.main || null,
           brand: sp.brand?.titleFa || '',
           category: sp.category?.titleFa || '',
           product_status: sp.product.status, // وضعیت محصول در کاتالوگ

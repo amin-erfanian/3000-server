@@ -24,3 +24,8 @@ logs/*.log*
 *.njsproj
 *.sln
 *.sw?
+
+
+/uploads
+/uploads*
+/uploads/*

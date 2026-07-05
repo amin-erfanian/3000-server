@@ -22,6 +22,7 @@
     "jalaali-js": "^1.2.7",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.3",
+    "multer": "^2.2.0",
     "slugify": "^1.6.9",
     "winston": "^3.17.0"
   }

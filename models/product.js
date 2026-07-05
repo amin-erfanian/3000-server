@@ -1,23 +1,5 @@
 const mongoose = require('mongoose');
 
-const imageSchema = new mongoose.Schema(
-  {
-    url: {
-      type: String,
-      required: true,
-    },
-    thumbnailUrl: {
-      type: String,
-      default: '',
-    },
-    alt: {
-      type: String,
-      default: '',
-    },
-  },
-  { _id: false },
-);
-
 const productSchema = new mongoose.Schema(
   {
     titleFa: {
@@ -81,13 +63,9 @@ const productSchema = new mongoose.Schema(
       max: 100,
     },
 
-    // Images (array of URLs)
     images: {
-      main: imageSchema,
-      gallery: {
-        type: [imageSchema],
-        default: [],
-      },
+      main: { type: String, default: '' },
+      gallery: [{ type: String }],
     },
     videos: {
       type: [

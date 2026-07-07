@@ -3,14 +3,17 @@ const router = express.Router();
 const Brand = require('../models/brand');
 const CustomError = require('../classes/custom-error');
 
-// GET all brands
 router.get('/', async (req, res) => {
-  const { page = 1, limit = 20, isActive, search } = req.query;
+  const { page = 1, limit = 20, isActive, search, category } = req.query;
 
   const filter = {};
 
   if (isActive !== undefined) {
     filter.isActive = isActive === 'true';
+  }
+
+  if (category) {
+    filter.categories = category;
   }
 
   if (search) {
@@ -67,4 +70,3 @@ router.get('/slug/:slug', async (req, res) => {
 });
 
 module.exports = router;
-

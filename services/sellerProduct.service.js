@@ -1,6 +1,6 @@
 // services/sellerProduct.service.js
 const mongoose = require('mongoose');
-const SellerProduct = require('../models/Seller-Product');
+const SellerProduct = require('../models/seller-product');
 const Product = require('../models/Product');
 
 class SellerProductService {

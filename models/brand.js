@@ -16,6 +16,13 @@ const brandSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    categories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        index: true,
+      },
+    ],
     logo: {
       type: String,
       default: '',
@@ -30,6 +37,8 @@ const brandSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+brandSchema.index({ categories: 1, isActive: 1 });
 
 const Brand = mongoose.model('Brand', brandSchema);
 module.exports = Brand;

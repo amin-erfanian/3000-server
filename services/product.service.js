@@ -251,7 +251,7 @@ class ProductService {
 
       // Category filter (slug-based)
       if (categories) {
-        const Category = require('../models/Category');
+        const Category = require('../models/category');
         const categoryList = categories.split(',').map((s) => s.trim());
         const categoryDocs = await Category.find({ slug: { $in: categoryList } })
           .select('_id')
@@ -263,7 +263,7 @@ class ProductService {
 
       // Brand filter (slug-based)
       if (brands) {
-        const Brand = require('../models/Brand');
+        const Brand = require('../models/brand');
         const brandList = brands.split(',').map((s) => s.trim());
         const brandDocs = await Brand.find({ slug: { $in: brandList } })
           .select('_id')
@@ -295,7 +295,7 @@ class ProductService {
       // Color filter (via variants)
       let productIdsFromColors = null;
       if (colors) {
-        const Color = require('../models/Color');
+        const Color = require('../models/color');
         const colorList = colors.split(',').map((s) => s.trim());
         const colorDocs = await Color.find({ slug: { $in: colorList } })
           .select('_id')

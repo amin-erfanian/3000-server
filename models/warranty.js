@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 
 const warrantySchema = new mongoose.Schema(
   {
-    titleFa: {
+    name: {
       type: String,
       required: true,
     },
-    titleEn: {
+    nameEn: {
       type: String,
       default: '',
     },

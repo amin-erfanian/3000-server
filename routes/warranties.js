@@ -14,10 +14,7 @@ router.get('/', async (req, res) => {
   }
 
   if (search) {
-    filter.$or = [
-      { titleFa: { $regex: search, $options: 'i' } },
-      { titleEn: { $regex: search, $options: 'i' } },
-    ];
+    filter.$or = [{ name: { $regex: search, $options: 'i' } }, { nameEn: { $regex: search, $options: 'i' } }];
   }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -40,9 +37,9 @@ router.get('/', async (req, res) => {
 
 // POST create a warranty
 router.post('/', async (req, res) => {
-  const { titleFa, titleEn, description, durationValue, durationUnit, isActive } = req.body;
+  const { name, nameEn, description, durationValue, durationUnit, isActive } = req.body;
 
-  if (!titleFa) {
+  if (!name) {
     throw new CustomError(400, 'BAD_REQUEST', {
       fa: 'عنوان فارسی الزامی است.',
       en: 'Farsi title is required.',
@@ -50,8 +47,8 @@ router.post('/', async (req, res) => {
   }
 
   const warranty = new Warranty({
-    titleFa,
-    titleEn: titleEn || '',
+    name,
+    nameEn: nameEn || '',
     description: description || '',
     duration: {
       value: durationValue !== undefined ? parseInt(durationValue) : 0,

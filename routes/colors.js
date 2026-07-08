@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Color = require('../models/Color');
+const Color = require('../models/color');
 const CustomError = require('../classes/custom-error');
 
 // GET all colors
@@ -14,10 +14,7 @@ router.get('/', async (req, res) => {
   }
 
   if (search) {
-    filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { titleEn: { $regex: search, $options: 'i' } },
-    ];
+    filter.$or = [{ name: { $regex: search, $options: 'i' } }, { nameEn: { $regex: search, $options: 'i' } }];
   }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);

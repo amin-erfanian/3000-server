@@ -25,6 +25,10 @@ const warrantySchema = new mongoose.Schema(
         default: 'month',
       },
     },
+    images: {
+      front: String,
+      back: String,
+    },
     isActive: {
       type: Boolean,
       default: true,

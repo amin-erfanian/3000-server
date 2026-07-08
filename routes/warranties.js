@@ -38,6 +38,33 @@ router.get('/', async (req, res) => {
   });
 });
 
+// POST create a warranty
+router.post('/', async (req, res) => {
+  const { titleFa, titleEn, description, durationValue, durationUnit, isActive } = req.body;
+
+  if (!titleFa) {
+    throw new CustomError(400, 'BAD_REQUEST', {
+      fa: 'عنوان فارسی الزامی است.',
+      en: 'Farsi title is required.',
+    });
+  }
+
+  const warranty = new Warranty({
+    titleFa,
+    titleEn: titleEn || '',
+    description: description || '',
+    duration: {
+      value: durationValue !== undefined ? parseInt(durationValue) : 0,
+      unit: durationUnit || 'day',
+    },
+    isActive: isActive !== undefined ? isActive : true,
+  });
+
+  await warranty.save();
+
+  res.status(201).json(warranty);
+});
+
 // GET warranty by ID
 router.get('/:id', async (req, res) => {
   const warranty = await Warranty.findById(req.params.id);
@@ -53,4 +80,3 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

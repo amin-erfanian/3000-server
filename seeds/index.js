@@ -113,7 +113,7 @@ async function printSummary() {
   const Brand = require('../models/brand');
   const Seller = require('../models/seller');
   const Product = require('../models/product');
-  const Variant = require('../models/Variant');
+  const Variant = require('../models/variant');
 
   const counts = {
     categories: await Category.countDocuments(),

@@ -99,7 +99,7 @@ class SellerProductService {
       ]);
 
       // محاسبه تعداد واریانت‌ها برای هر محصول
-      const Variant = require('../models/Variant');
+      const Variant = require('../models/variant');
       const sellerProductIds = sellerProducts.map((sp) => sp._id);
 
       const variantCounts = await Variant.aggregate([
@@ -188,7 +188,7 @@ class SellerProductService {
    */
   async removeProductFromSeller(sellerProductId, sellerId) {
     try {
-      const Variant = require('../models/Variant');
+      const Variant = require('../models/variant');
 
       // بررسی وجود واریانت‌های فعال
       const activeVariants = await Variant.countDocuments({

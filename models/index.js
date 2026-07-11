@@ -1,11 +1,5 @@
 const User = require('./user');
 const Asset = require('./asset');
-const Budget = require('./budget');
-const Loan = require('./loan');
-const Notification = require('./notification');
-const Resource = require('./resource');
-const Subscription = require('./subscription');
-const Transaction = require('./transaction');
 const VerificationCode = require('./verification-code');
 
 // E-commerce Models (Digikala-style)

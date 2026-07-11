@@ -112,7 +112,7 @@ async function printSummary() {
   const Warranty = require('../models/warranty');
   const Brand = require('../models/brand');
   const Seller = require('../models/seller');
-  const Product = require('../models/Product');
+  const Product = require('../models/product');
   const Variant = require('../models/Variant');
 
   const counts = {

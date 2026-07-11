@@ -1,7 +1,7 @@
 // services/variant.service.js
 const mongoose = require('mongoose');
 const Variant = require('../models/Variant');
-const Product = require('../models/Product');
+const Product = require('../models/product');
 
 class VariantService {
   /**

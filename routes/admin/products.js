@@ -4,7 +4,7 @@ const router = express.Router();
 const productService = require('../../services/product.service');
 const authMiddleware = require('../../middlewares/authorization');
 const roleMiddleware = require('../../middlewares/role');
-const Product = require('../../models/Product');
+const Product = require('../../models/product');
 
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin']));
@@ -83,7 +83,6 @@ router.get('/:productId/variants', async (req, res, next) => {
   }
 });
 
-
 /**
  * @route   POST /api/admin/products/:productId/approve
  * @desc    Approve a product
@@ -110,7 +109,11 @@ router.post('/:productId/approve', async (req, res) => {
     });
   } catch (error) {
     const message = error?.message || 'Failed to approve product';
-    const statusCode = /نامعتبر|invalid|required/i.test(message) ? 400 : /یافت نشد|not found/i.test(message) ? 404 : 500;
+    const statusCode = /نامعتبر|invalid|required/i.test(message)
+      ? 400
+      : /یافت نشد|not found/i.test(message)
+        ? 404
+        : 500;
 
     res.status(statusCode).json({
       status: 'error',
@@ -151,7 +154,12 @@ router.post('/:productId/reject', async (req, res) => {
       });
     }
 
-    const result = await productService.rejectProduct(req.params.productId, adminId, reason, propertyKeys || []);
+    const result = await productService.rejectProduct(
+      req.params.productId,
+      adminId,
+      reason,
+      propertyKeys || [],
+    );
 
     res.json({
       status: 'ok',
@@ -160,7 +168,11 @@ router.post('/:productId/reject', async (req, res) => {
     });
   } catch (error) {
     const message = error?.message || 'Failed to reject product';
-    const statusCode = /نامعتبر|invalid|required/i.test(message) ? 400 : /یافت نشد|not found/i.test(message) ? 404 : 500;
+    const statusCode = /نامعتبر|invalid|required/i.test(message)
+      ? 400
+      : /یافت نشد|not found/i.test(message)
+        ? 404
+        : 500;
 
     res.status(statusCode).json({
       status: 'error',

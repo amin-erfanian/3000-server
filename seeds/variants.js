@@ -9,7 +9,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Variant = require('../models/Variant');
-const Product = require('../models/Product');
+const Product = require('../models/product');
 const Seller = require('../models/seller');
 const Color = require('../models/color');
 const Warranty = require('../models/warranty');

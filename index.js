@@ -20,10 +20,7 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
-mongoose.connect(`mongodb://localhost:${DB_PORT}/3000`, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(`mongodb://admin:AminErf9991@localhost:${DB_PORT}/store3000?authSource=admin`);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));

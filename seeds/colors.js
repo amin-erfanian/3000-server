@@ -14,26 +14,26 @@ const DB_PORT = process.env.DB_PORT || 27017;
 const mongoUri = process.env.MONGODB_URI || `mongodb://localhost:${DB_PORT}/3000`;
 
 const COLORS = [
-  { title: 'مشکی', titleEn: 'Black', hexCode: '#000000' },
-  { title: 'سفید', titleEn: 'White', hexCode: '#FFFFFF' },
-  { title: 'خاکستری', titleEn: 'Gray', hexCode: '#808080' },
-  { title: 'نقره‌ای', titleEn: 'Silver', hexCode: '#C0C0C0' },
-  { title: 'طلایی', titleEn: 'Gold', hexCode: '#FFD700' },
-  { title: 'آبی', titleEn: 'Blue', hexCode: '#0066CC' },
-  { title: 'آبی تیره', titleEn: 'Dark Blue', hexCode: '#00008B' },
-  { title: 'آبی آسمانی', titleEn: 'Sky Blue', hexCode: '#87CEEB' },
-  { title: 'قرمز', titleEn: 'Red', hexCode: '#FF0000' },
-  { title: 'صورتی', titleEn: 'Pink', hexCode: '#FFC0CB' },
-  { title: 'بنفش', titleEn: 'Purple', hexCode: '#800080' },
-  { title: 'سبز', titleEn: 'Green', hexCode: '#008000' },
-  { title: 'سبز تیره', titleEn: 'Dark Green', hexCode: '#006400' },
-  { title: 'نارنجی', titleEn: 'Orange', hexCode: '#FFA500' },
-  { title: 'زرد', titleEn: 'Yellow', hexCode: '#FFFF00' },
-  { title: 'قهوه‌ای', titleEn: 'Brown', hexCode: '#8B4513' },
-  { title: 'بژ', titleEn: 'Beige', hexCode: '#F5F5DC' },
-  { title: 'کرم', titleEn: 'Cream', hexCode: '#FFFDD0' },
-  { title: 'تیتانیوم', titleEn: 'Titanium', hexCode: '#878681' },
-  { title: 'رزگلد', titleEn: 'Rose Gold', hexCode: '#B76E79' },
+  { name: 'مشکی', nameEn: 'Black', hexCode: '#000000' },
+  { name: 'سفید', nameEn: 'White', hexCode: '#FFFFFF' },
+  { name: 'خاکستری', nameEn: 'Gray', hexCode: '#808080' },
+  { name: 'نقره‌ای', nameEn: 'Silver', hexCode: '#C0C0C0' },
+  { name: 'طلایی', nameEn: 'Gold', hexCode: '#FFD700' },
+  { name: 'آبی', nameEn: 'Blue', hexCode: '#0066CC' },
+  { name: 'آبی تیره', nameEn: 'Dark Blue', hexCode: '#00008B' },
+  { name: 'آبی آسمانی', nameEn: 'Sky Blue', hexCode: '#87CEEB' },
+  { name: 'قرمز', nameEn: 'Red', hexCode: '#FF0000' },
+  { name: 'صورتی', nameEn: 'Pink', hexCode: '#FFC0CB' },
+  { name: 'بنفش', nameEn: 'Purple', hexCode: '#800080' },
+  { name: 'سبز', nameEn: 'Green', hexCode: '#008000' },
+  { name: 'سبز تیره', nameEn: 'Dark Green', hexCode: '#006400' },
+  { name: 'نارنجی', nameEn: 'Orange', hexCode: '#FFA500' },
+  { name: 'زرد', nameEn: 'Yellow', hexCode: '#FFFF00' },
+  { name: 'قهوه‌ای', nameEn: 'Brown', hexCode: '#8B4513' },
+  { name: 'بژ', nameEn: 'Beige', hexCode: '#F5F5DC' },
+  { name: 'کرم', nameEn: 'Cream', hexCode: '#FFFDD0' },
+  { name: 'تیتانیوم', nameEn: 'Titanium', hexCode: '#878681' },
+  { name: 'رزگلد', nameEn: 'Rose Gold', hexCode: '#B76E79' },
 ];
 
 async function seedColors() {
@@ -59,12 +59,12 @@ async function seedColors() {
     for (const color of COLORS) {
       const existing = await Color.findOne({ hexCode: color.hexCode });
       if (existing) {
-        console.log(`⏭️  Skip: ${color.title}`);
+        console.log(`⏭️  Skip: ${color.name}`);
         continue;
       }
 
       await Color.create({ ...color, isActive: true });
-      console.log(`✓ ${color.title} (${color.hexCode})`);
+      console.log(`✓ ${color.name} (${color.hexCode})`);
     }
 
     const totalCount = await Color.countDocuments();

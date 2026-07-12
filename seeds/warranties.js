@@ -15,44 +15,44 @@ const mongoUri = process.env.MONGODB_URI || `mongodb://localhost:${DB_PORT}/3000
 
 const WARRANTIES = [
   {
-    titleFa: 'گارانتی ۱۸ ماهه شرکتی',
-    titleEn: '18 Month Official',
+    name: 'گارانتی ۱۸ ماهه شرکتی',
+    nameEn: '18 Month Official',
     description: 'گارانتی رسمی شرکتی',
     duration: { value: 18, unit: 'month' },
   },
   {
-    titleFa: 'گارانتی ۲۴ ماهه شرکتی',
-    titleEn: '24 Month Official',
+    name: 'گارانتی ۲۴ ماهه شرکتی',
+    nameEn: '24 Month Official',
     description: 'گارانتی رسمی دو ساله',
     duration: { value: 24, unit: 'month' },
   },
   {
-    titleFa: 'گارانتی ۱۲ ماهه',
-    titleEn: '12 Month',
+    name: 'گارانتی ۱۲ ماهه',
+    nameEn: '12 Month',
     description: 'گارانتی یک ساله',
     duration: { value: 12, unit: 'month' },
   },
   {
-    titleFa: 'گارانتی ۶ ماهه',
-    titleEn: '6 Month',
+    name: 'گارانتی ۶ ماهه',
+    nameEn: '6 Month',
     description: 'گارانتی شش ماهه',
     duration: { value: 6, unit: 'month' },
   },
   {
-    titleFa: 'بدون گارانتی',
-    titleEn: 'No Warranty',
+    name: 'بدون گارانتی',
+    nameEn: 'No Warranty',
     description: 'بدون گارانتی',
     duration: { value: 0, unit: 'month' },
   },
   {
-    titleFa: 'گارانتی مادام‌العمر',
-    titleEn: 'Lifetime',
+    name: 'گارانتی مادام‌العمر',
+    nameEn: 'Lifetime',
     description: 'گارانتی مادام‌العمر',
     duration: { value: 100, unit: 'year' },
   },
   {
-    titleFa: 'گارانتی ۳۶ ماهه',
-    titleEn: '36 Month',
+    name: 'گارانتی ۳۶ ماهه',
+    nameEn: '36 Month',
     description: 'گارانتی سه ساله',
     duration: { value: 36, unit: 'month' },
   },
@@ -79,14 +79,14 @@ async function seedWarranties() {
     console.log('📜 Seeding warranties...\n');
 
     for (const warranty of WARRANTIES) {
-      const existing = await Warranty.findOne({ titleFa: warranty.titleFa });
+      const existing = await Warranty.findOne({ name: warranty.name });
       if (existing) {
-        console.log(`⏭️  Skip: ${warranty.titleFa}`);
+        console.log(`⏭️  Skip: ${warranty.name}`);
         continue;
       }
 
       await Warranty.create({ ...warranty, isActive: true });
-      console.log(`✓ ${warranty.titleFa}`);
+      console.log(`✓ ${warranty.name}`);
     }
 
     const totalCount = await Warranty.countDocuments();

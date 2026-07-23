@@ -291,13 +291,6 @@ router.post('/create', async (req, res, next) => {
       });
     }
 
-    if (referencePrice === undefined || referencePrice === null) {
-      return res.status(400).json({
-        success: false,
-        message: 'قیمت مرجع الزامی است',
-      });
-    }
-
     if (commission === undefined || commission === null) {
       return res.status(400).json({
         success: false,

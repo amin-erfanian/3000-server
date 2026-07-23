@@ -41,97 +41,24 @@ class ProductService {
     }
   }
 
-  async getProductById(id, populateFields = []) {
+  async getProductById(id) {
     try {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new Error('شناسه محصول نامعتبر است');
       }
 
-      const pipeline = [
-        {
-          $match: { _id: new mongoose.Types.ObjectId(id) },
-        },
-        {
-          $lookup: {
-            from: 'categories',
-            localField: 'category',
-            foreignField: '_id',
-            as: 'category',
-          },
-        },
-        {
-          $lookup: {
-            from: 'brands',
-            localField: 'brand',
-            foreignField: '_id',
-            as: 'brand',
-          },
-        },
-        {
-          $unwind: {
-            path: '$category',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: '$brand',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            titleFa: 1,
-            titleEn: 1,
-            slug: 1,
-            sku: 1,
-            status: 1,
-            marketStatus: 1,
-            minBasketQuantity: 1,
-            images: 1,
-            referencePrice: 1,
-            commission: 1,
-            dimensions: 1,
-            weight: 1,
-            description: 1,
-            category: {
-              _id: 1,
-              titleFa: 1,
-              titleEn: 1,
-              slug: 1,
-            },
-            brand: {
-              _id: 1,
-              titleFa: 1,
-              titleEn: 1,
-              slug: 1,
-              logo: 1,
-            },
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        },
-      ];
+      const product = await Product.findById(id)
+        .populate('category', '_id titleFa titleEn slug')
+        .populate('brand', '_id titleFa titleEn slug logo')
+        .lean();
 
-      const products = await Product.aggregate(pipeline);
-
-      if (!products || products.length === 0) {
-        return {
-          success: false,
-          message: 'محصول یافت نشد',
-        };
+      if (!product) {
+        return { success: false, message: 'محصول یافت نشد' };
       }
 
-      return {
-        success: true,
-        data: products[0],
-      };
+      return { success: true, data: product };
     } catch (error) {
-      return {
-        success: false,
-        message: `خطا در دریافت محصول: ${error.message}`,
-      };
+      return { success: false, message: `خطا در دریافت محصول: ${error.message}` };
     }
   }
 

@@ -10,6 +10,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 
 const DB_PORT = process.env.DB_PORT;
+const DB_PASS = process.env.DB_PASS;
 
 const app = express();
 
@@ -19,8 +20,9 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+console.log(DB_PASS);
 // Database Connection
-mongoose.connect(`mongodb://admin:AminErf9991@localhost:${DB_PORT}/store3000?authSource=admin`);
+mongoose.connect(`mongodb://localhost:${DB_PORT}/3000?authSource=admin`);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));

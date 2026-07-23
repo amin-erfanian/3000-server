@@ -53,8 +53,8 @@ const productSchema = new mongoose.Schema(
     // Pricing
     referencePrice: {
       type: Number,
-      required: true,
       min: 0,
+      default: 0,
     },
     commission: {
       type: Number,

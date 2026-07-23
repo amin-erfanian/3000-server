@@ -194,8 +194,8 @@ router.get('/catalog', async (req, res) => {
             status: 1,
             marketStatus: 1,
             minBasketQuantity: 1,
-            brand: { titleFa: '$brand.titleFa', slug: '$brand.slug' },
-            category: { titleFa: '$category.titleFa', slug: '$category.slug' },
+            brand: { titleFa: '$brand.titleFa', titleEn: '$brand.titleEn', slug: '$brand.slug' },
+            category: { titleFa: '$category.titleFa', titleEn: '$category.titleEn', slug: '$category.slug' },
             variant_count: {
               $ifNull: [{ $arrayElemAt: ['$variantData.count.total', 0] }, 0],
             },
@@ -231,8 +231,8 @@ router.get('/catalog', async (req, res) => {
           id: p._id,
           title: p.titleFa || p.titleEn || '',
           image_src: p.images?.main || null,
-          brand: p.brand?.titleFa || '',
-          category: p.category?.titleFa || '',
+          brand: p.brand,
+          category: p.category,
           status: p.status,
           market_status: p.marketStatus,
           min_basket_quantity: p.minBasketQuantity || 1,
@@ -401,6 +401,8 @@ router.put('/:productId', async (req, res, next) => {
       });
     }
 
+    console.log(req.body);
+
     // Extract product data from request
     const {
       titleFa,
@@ -448,36 +450,32 @@ router.put('/:productId', async (req, res, next) => {
       });
     }
 
-    // Prepare update data
+    const updatedSlug =
+      titleFa
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\u0600-\u06FFa-z0-9\-]/g, '') +
+      '-' +
+      Date.now();
+
     const updateData = {
+      titleFa,
+      titleEn,
+      description,
+      category: category._id,
+      brand: brand._id,
+      sku,
+      dimensions,
+      weight,
+      referencePrice,
+      commission,
+      images,
+      videos,
+      minBasketQuantity,
+      marketStatus,
       status: 'pending',
+      slug: updatedSlug,
     };
-
-    if (titleFa !== undefined) {
-      updateData.titleFa = titleFa;
-      // Regenerate slug if title changed
-      updateData.slug =
-        titleFa
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\u0600-\u06FFa-z0-9\-]/g, '') +
-        '-' +
-        Date.now();
-    }
-
-    if (titleEn !== undefined) updateData.titleEn = titleEn;
-    if (description !== undefined) updateData.description = description;
-    if (category !== undefined) updateData.category = category;
-    if (brand !== undefined) updateData.brand = brand || undefined;
-    if (sku !== undefined) updateData.sku = sku;
-    if (dimensions !== undefined) updateData.dimensions = dimensions;
-    if (weight !== undefined) updateData.weight = weight;
-    if (referencePrice !== undefined) updateData.referencePrice = referencePrice;
-    if (commission !== undefined) updateData.commission = commission;
-    if (images !== undefined) updateData.images = images;
-    if (videos !== undefined) updateData.videos = videos;
-    if (minBasketQuantity !== undefined) updateData.minBasketQuantity = minBasketQuantity;
-    if (marketStatus !== undefined) updateData.marketStatus = marketStatus;
 
     // Update product using service
     const result = await productService.updateProduct(productId, updateData);
@@ -686,12 +684,12 @@ router.get('/my-catalog', async (req, res) => {
           product_id: sp.product._id,
           title: sp.product.titleFa || sp.product.titleEn || '',
           image_src: sp.product.images?.main || null,
-          brand: sp.brand?.titleFa || '',
-          category: sp.category?.titleFa || '',
-          product_status: sp.product.status, // وضعیت محصول در کاتالوگ
+          brand: sp.brand,
+          category: sp.category,
+          product_status: sp.product.status,
           market_status: sp.product.marketStatus,
           min_basket_quantity: sp.product.minBasketQuantity || 1,
-          variant_count: sp.variant_count, // تعداد واریانت‌های این فروشنده
+          variant_count: sp.variant_count,
           created_at: sp.createdAt,
           ...(sp.product.status === 'rejected' && {
             rejectionReason: sp.product.rejectionReason || {

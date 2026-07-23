@@ -23,6 +23,13 @@ const brandSchema = new mongoose.Schema(
         index: true,
       },
     ],
+    sellers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Seller',
+        index: true,
+      },
+    ],
     logo: {
       type: String,
       default: '',
@@ -30,6 +37,41 @@ const brandSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+
+    // Approval/Rejection fields
+    rejectionReason: {
+      propertyKeys: {
+        type: [String],
+        default: [],
+      },
+      message: {
+        type: String,
+        default: '',
+      },
+      rejectedAt: {
+        type: Date,
+      },
+      rejectedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin',
+      },
+    },
+
+    rejectionIssues: {
+      type: [
+        {
+          field: String,
+          message: String,
+        },
+      ],
+      default: [],
+    },
+
+    status: {
+      type: String,
+      enum: ['draft', 'pending', 'approved', 'rejected'],
+      default: 'pending',
     },
   },
   {

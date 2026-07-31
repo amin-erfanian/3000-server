@@ -100,7 +100,7 @@ router.get('/:id/breadcrumb', async (req, res) => {
 
 // POST create new category
 router.post('/', async (req, res) => {
-  const { titleFa, titleEn, slug, parent, image, returnReasonAlert, isActive } = req.body;
+  const { titleFa, titleEn, slug, parent, image, returnReasonAlert, isActive, attributes } = req.body;
 
   if (!titleFa || !slug) {
     throw new CustomError(400, 'VALIDATION_ERROR', {
@@ -137,6 +137,7 @@ router.post('/', async (req, res) => {
     image: image || '',
     returnReasonAlert: returnReasonAlert || '',
     isActive: isActive !== undefined ? isActive : true,
+    attributes: attributes || [],
   });
 
   await category.save();
@@ -148,7 +149,7 @@ router.post('/', async (req, res) => {
 
 // PUT update category
 router.put('/:id', async (req, res) => {
-  const { titleFa, titleEn, slug, parent, image, returnReasonAlert, isActive } = req.body;
+  const { titleFa, titleEn, slug, parent, image, returnReasonAlert, isActive, attributes } = req.body;
 
   const category = await Category.findById(req.params.id);
 
@@ -197,6 +198,7 @@ router.put('/:id', async (req, res) => {
   if (image !== undefined) category.image = image;
   if (returnReasonAlert !== undefined) category.returnReasonAlert = returnReasonAlert;
   if (isActive !== undefined) category.isActive = isActive;
+  if (attributes !== undefined) category.attributes = attributes;
 
   await category.save();
 
@@ -243,6 +245,33 @@ router.delete('/:id', async (req, res) => {
       en: 'Category deleted successfully.',
     },
   });
+});
+
+// PUT replace attributes array
+router.put('/:id/attributes', async (req, res) => {
+  const { attributes } = req.body;
+
+  if (!Array.isArray(attributes)) {
+    throw new CustomError(400, 'VALIDATION_ERROR', {
+      fa: 'attributes باید یک آرایه باشد.',
+      en: 'attributes must be an array.',
+    });
+  }
+
+  const category = await Category.findByIdAndUpdate(
+    req.params.id,
+    { attributes },
+    { new: true, runValidators: true },
+  ).populate('parent', 'titleFa titleEn slug');
+
+  if (!category) {
+    throw new CustomError(404, 'NOT_FOUND', {
+      fa: 'دسته‌بندی یافت نشد.',
+      en: 'Category not found.',
+    });
+  }
+
+  res.json(category);
 });
 
 module.exports = router;

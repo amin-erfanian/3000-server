@@ -21,7 +21,7 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
-mongoose.connect(`mongodb://admin:${DB_PASS}@localhost:${DB_PORT}/store3000?authSource=admin`);
+mongoose.connect(`mongodb://localhost:${DB_PORT}/3000`);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -31,7 +31,9 @@ db.once('open', () => {
 
 const authMiddleware = require('./middlewares/authorization');
 
-const authRoutes = require('./routes/authentication');
+const buyerAuthRoutes = require('./routes/authentication');
+const sellerAuthRoutes = require('./routes/seller/authentication');
+const adminAuthRoutes = require('./routes/admin/authentication');
 
 // E-commerce routes
 const brandRoutes = require('./routes/brands');
@@ -47,8 +49,7 @@ const sellerProductRoutes = require('./routes/seller/products');
 const sellerVariantRoutes = require('./routes/seller/variants');
 const adminProductRoutes = require('./routes/admin/products');
 const adminVariantRoutes = require('./routes/admin/variants');
-
-app.use('/auth', authRoutes);
+const sellerProfileRoutes = require('./routes/seller/profile');
 
 // E-commerce routes (public GET routes)
 app.use('/brands', brandRoutes);
@@ -58,10 +59,14 @@ app.use('/warranties', warrantyRoutes);
 app.use('/categories', categoryRoutes);
 
 // Modular panel routes
+app.use('/auth', buyerAuthRoutes);
 app.use('/buyer/products', buyerProductRoutes);
 app.use('/buyer/variants', buyerVariantRoutes);
+app.use('/seller/auth', sellerAuthRoutes);
 app.use('/seller/products', sellerProductRoutes);
 app.use('/seller/variants', sellerVariantRoutes);
+app.use('/seller/profile', sellerProfileRoutes);
+app.use('/admin/auth', adminAuthRoutes);
 app.use('/admin/products', adminProductRoutes);
 app.use('/admin/variants', adminVariantRoutes);
 

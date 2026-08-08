@@ -16,6 +16,18 @@ const sellerSchema = new mongoose.Schema(
     code: {
       type: String,
       unique: true,
+      required: true,
+      sparse: true,
+      index: true,
+    },
+    type: {
+      type: String,
+      default: 'unknown',
+      enum: ['real', 'legal', 'unknown'],
+    },
+    nationalId: {
+      type: String,
+      unique: true,
       sparse: true,
       index: true,
     },

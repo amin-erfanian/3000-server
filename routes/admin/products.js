@@ -1,4 +1,3 @@
-// routes/admin/products.js
 const express = require('express');
 const router = express.Router();
 const productService = require('../../services/product.service');
@@ -24,7 +23,7 @@ router.get('/', async (req, res, next) => {
       Product.find(filters)
         .populate('brand')
         .populate('category')
-        .populate('createdBy')
+        .populate('createdBy', 'title phone nationalId code')
         .sort(sort)
         .skip(skip)
         .limit(limitNum)

@@ -4,20 +4,48 @@ const productService = require('../../services/product.service');
 const authMiddleware = require('../../middlewares/authorization');
 const roleMiddleware = require('../../middlewares/role');
 const Product = require('../../models/product');
+const Seller = require('../../models/seller');
 
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin']));
 
 router.get('/', async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, sort_column = 'createdAt', sort_order = 'desc' } = req.query;
+    const {
+      page = 1,
+      limit = 20,
+      sort_column = 'createdAt',
+      sort_order = 'desc',
+      code,
+      title,
+      phone,
+    } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
-    const skip = (pageNum - 1) * limitNum;
-
     const filters = { status: 'pending' };
+
+    if (code || title || phone) {
+      const sellerQuery = {};
+      if (code) sellerQuery.code = code;
+      if (title) sellerQuery.title = { $regex: title, $options: 'i' };
+      if (phone) sellerQuery.phone = phone;
+
+      const sellerIds = await Seller.find(sellerQuery).distinct('_id');
+      if (!sellerIds.length)
+        return res.json({
+          status: 'ok',
+          data: {
+            items: [],
+            pager: { page: pageNum, item_per_page: limitNum, total_pages: 0, total_rows: 0 },
+          },
+        });
+
+      filters.createdBy = { $in: sellerIds };
+    }
+
     const sort = { [sort_column]: sort_order === 'asc' ? 1 : -1 };
+    const skip = (pageNum - 1) * limitNum;
 
     const [items, total_rows] = await Promise.all([
       Product.find(filters)
@@ -31,11 +59,6 @@ router.get('/', async (req, res, next) => {
       Product.countDocuments(filters),
     ]);
 
-    const normalizedItems = items.map((item) => ({
-      ...item,
-      seller: item.createdBy || null,
-    }));
-
     res.json({
       status: 'ok',
       data: {
@@ -46,11 +69,11 @@ router.get('/', async (req, res, next) => {
           total_pages: Math.ceil(total_rows / limitNum),
           total_rows,
         },
-        items: normalizedItems,
+        items,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 });
 

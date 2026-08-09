@@ -44,6 +44,7 @@ const categorySchema = new mongoose.Schema(
           label: { type: String, required: true },
           type: { type: String, required: true },
           required: { type: Boolean, default: false },
+          placeholder: { type: String, default: '' },
         },
       ],
       default: [],

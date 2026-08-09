@@ -31,44 +31,49 @@ db.once('open', () => {
 
 const authMiddleware = require('./middlewares/authorization');
 
+// Auth routes
 const buyerAuthRoutes = require('./routes/authentication');
 const sellerAuthRoutes = require('./routes/seller/authentication');
 const adminAuthRoutes = require('./routes/admin/authentication');
 
-// E-commerce routes
+app.use('/auth', buyerAuthRoutes);
+app.use('/seller/auth', sellerAuthRoutes);
+app.use('/admin/auth', adminAuthRoutes);
+
+// Public routes
 const brandRoutes = require('./routes/brands');
 const colorRoutes = require('./routes/colors');
 const reviewRoutes = require('./routes/reviews');
 const warrantyRoutes = require('./routes/warranties');
 const categoryRoutes = require('./routes/categories');
-
-// Modular panel routes
 const buyerProductRoutes = require('./routes/buyer/products');
 const buyerVariantRoutes = require('./routes/buyer/variants');
-const sellerProductRoutes = require('./routes/seller/products');
-const sellerVariantRoutes = require('./routes/seller/variants');
-const adminProductRoutes = require('./routes/admin/products');
-const adminVariantRoutes = require('./routes/admin/variants');
-const sellerProfileRoutes = require('./routes/seller/profile');
 
-// E-commerce routes (public GET routes)
 app.use('/brands', brandRoutes);
 app.use('/colors', colorRoutes);
 app.use('/reviews', reviewRoutes);
 app.use('/warranties', warrantyRoutes);
 app.use('/categories', categoryRoutes);
-
-// Modular panel routes
-app.use('/auth', buyerAuthRoutes);
 app.use('/buyer/products', buyerProductRoutes);
 app.use('/buyer/variants', buyerVariantRoutes);
-app.use('/seller/auth', sellerAuthRoutes);
+
+// Seller routes
+const sellerProductRoutes = require('./routes/seller/products');
+const sellerVariantRoutes = require('./routes/seller/variants');
+const sellerProfileRoutes = require('./routes/seller/profile');
+
 app.use('/seller/products', sellerProductRoutes);
 app.use('/seller/variants', sellerVariantRoutes);
 app.use('/seller/profile', sellerProfileRoutes);
-app.use('/admin/auth', adminAuthRoutes);
+
+// Admin routes
+const adminProductRoutes = require('./routes/admin/products');
+const adminVariantRoutes = require('./routes/admin/variants');
+const adminCategoryRoutes = require('./routes/admin/categories');
+
 app.use('/admin/products', adminProductRoutes);
 app.use('/admin/variants', adminVariantRoutes);
+app.use('/admin/categories', adminCategoryRoutes);
 
 app.use(errorHandlerMiddleware);
 

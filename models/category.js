@@ -29,6 +29,14 @@ const categorySchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    commission: {
+      type: Number,
+      default: 0,
+    },
+    publicIds: {
+      type: [String],
+      default: [],
+    },
     attributes: {
       type: [
         {

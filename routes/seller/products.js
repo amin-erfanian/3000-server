@@ -239,6 +239,7 @@ router.post('/create', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
+      attributes,
     } = req.body;
 
     // Validate required fields separately
@@ -295,6 +296,7 @@ router.post('/create', async (req, res, next) => {
       videos: videos || [],
       minBasketQuantity: minBasketQuantity || 1,
       marketStatus: marketStatus || 'marketable',
+      attributes: attributes || [],
       code,
       createdBy: sellerId,
       status: 'pending',
@@ -380,6 +382,7 @@ router.put('/:productId', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
+      attributes,
     } = req.body;
 
     // Validate required fields if provided
@@ -434,6 +437,7 @@ router.put('/:productId', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
+      attributes,
       status: 'pending',
       slug: updatedSlug,
     };

@@ -38,13 +38,21 @@ const productSchema = new mongoose.Schema(
       ref: 'Brand',
       index: true,
     },
-
     sku: {
       type: String,
       default: '',
       index: true,
     },
-
+    attributes: {
+      type: [
+        {
+          key: { type: String, required: true },
+          label: { type: String, required: true },
+          value: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
     dimensions: {
       length: { type: Number, default: 0 },
       width: { type: Number, default: 0 },

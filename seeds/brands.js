@@ -94,18 +94,7 @@ const BRANDS = [
     slug: 'apple',
     status: 'approved',
     logo: '/images/brands/apple.png',
-    categories: [
-      CAT.mobilePhone,
-      CAT.applePhone,
-      CAT.appleAirpods,
-      CAT.appleWatch,
-      CAT.macbook,
-      CAT.macbookAir,
-      CAT.macbookPro,
-      CAT.ipad,
-      CAT.tablet,
-      CAT.gamingConsole,
-    ],
+    categories: [],
   },
   {
     titleFa: 'سامسونگ',
@@ -113,15 +102,7 @@ const BRANDS = [
     slug: 'samsung',
     status: 'approved',
     logo: '/images/brands/samsung.png',
-    categories: [
-      CAT.mobilePhone,
-      CAT.samsungPhone,
-      CAT.samsungBuds,
-      CAT.smartWatch,
-      CAT.samsungWatch,
-      CAT.tabletSamsung,
-      CAT.tablet,
-    ],
+    categories: [],
   },
   {
     titleFa: 'شیائومی',
@@ -129,14 +110,7 @@ const BRANDS = [
     slug: 'xiaomi',
     status: 'approved',
     logo: '/images/brands/xiaomi.png',
-    categories: [
-      CAT.mobilePhone,
-      CAT.xiaomiPhone,
-      CAT.smartWatch,
-      CAT.xiaomiWatch,
-      CAT.tabletXiaomi,
-      CAT.tablet,
-    ],
+    categories: [],
   },
   {
     titleFa: 'هواوی',
@@ -144,7 +118,7 @@ const BRANDS = [
     slug: 'huawei',
     status: 'approved',
     logo: '/images/brands/huawei.png',
-    categories: [CAT.mobilePhone, CAT.huaweiPhone, CAT.laptop, CAT.tablet],
+    categories: [],
   },
   {
     titleFa: 'سونی',
@@ -152,7 +126,7 @@ const BRANDS = [
     slug: 'sony',
     status: 'approved',
     logo: '/images/brands/sony.png',
-    categories: [CAT.mobilePhone, CAT.headphones, CAT.sonyHeadphones, CAT.camera, CAT.digitalCamera],
+    categories: [],
   },
   {
     titleFa: 'ال جی',
@@ -160,7 +134,7 @@ const BRANDS = [
     slug: 'lg',
     status: 'approved',
     logo: '/images/brands/lg.png',
-    categories: [CAT.mobilePhone],
+    categories: [],
   },
   {
     titleFa: 'ایسوس',
@@ -168,15 +142,7 @@ const BRANDS = [
     slug: 'asus',
     status: 'approved',
     logo: '/images/brands/asus.png',
-    categories: [
-      CAT.laptop,
-      CAT.laptopAsus,
-      CAT.asusVivobook,
-      CAT.asusZenbook,
-      CAT.asusTuf,
-      CAT.asusRog,
-      CAT.monitor,
-    ],
+    categories: [],
   },
   {
     titleFa: 'لنوو',
@@ -184,14 +150,7 @@ const BRANDS = [
     slug: 'lenovo',
     status: 'approved',
     logo: '/images/brands/lenovo.png',
-    categories: [
-      CAT.laptop,
-      CAT.laptopLenovo,
-      CAT.lenovoIdeapad,
-      CAT.lenovoThinkpad,
-      CAT.lenovoLoq,
-      CAT.lenovoLegion,
-    ],
+    categories: [],
   },
   {
     titleFa: 'اچ پی',
@@ -199,7 +158,7 @@ const BRANDS = [
     slug: 'hp',
     status: 'approved',
     logo: '/images/brands/hp.png',
-    categories: [CAT.laptop, CAT.laptopHp, CAT.monitor],
+    categories: [],
   },
   {
     titleFa: 'دل',
@@ -207,7 +166,7 @@ const BRANDS = [
     slug: 'dell',
     status: 'approved',
     logo: '/images/brands/dell.png',
-    categories: [CAT.laptop, CAT.laptopDell, CAT.monitor],
+    categories: [],
   },
   {
     titleFa: 'مایکروسافت',
@@ -215,7 +174,7 @@ const BRANDS = [
     slug: 'microsoft',
     status: 'approved',
     logo: '/images/brands/microsoft.png',
-    categories: [CAT.laptop, CAT.surfaceLaptop, CAT.surface, CAT.tablet, CAT.gamingConsole, CAT.xbox],
+    categories: [],
   },
   {
     titleFa: 'جی بیال',
@@ -223,7 +182,7 @@ const BRANDS = [
     slug: 'jbl',
     status: 'approved',
     logo: '/images/brands/jbl.png',
-    categories: [CAT.headphones, CAT.jblHeadphones, CAT.speaker, CAT.bluetoothSpeaker, CAT.jblSpeaker],
+    categories: [],
   },
   {
     titleFa: 'انکر',
@@ -231,13 +190,7 @@ const BRANDS = [
     slug: 'anker',
     status: 'approved',
     logo: '/images/brands/anker.png',
-    categories: [
-      CAT.mobileAccessories,
-      CAT.phoneCharger,
-      CAT.wirelessCharger,
-      CAT.chargingCable,
-      CAT.powerBank,
-    ],
+    categories: [],
   },
   {
     titleFa: 'بوش',

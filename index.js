@@ -48,12 +48,14 @@ const warrantyRoutes = require('./routes/warranties');
 const categoryRoutes = require('./routes/categories');
 const buyerProductRoutes = require('./routes/buyer/products');
 const buyerVariantRoutes = require('./routes/buyer/variants');
+const processRuleRoutes = require('./routes/process-rule');
 
 app.use('/brands', brandRoutes);
 app.use('/colors', colorRoutes);
 app.use('/reviews', reviewRoutes);
 app.use('/warranties', warrantyRoutes);
 app.use('/categories', categoryRoutes);
+app.use('/process-rules', processRuleRoutes);
 app.use('/buyer/products', buyerProductRoutes);
 app.use('/buyer/variants', buyerVariantRoutes);
 
@@ -72,10 +74,12 @@ app.use('/seller/storage', sellerStorageRoutes);
 const adminProductRoutes = require('./routes/admin/products');
 const adminVariantRoutes = require('./routes/admin/variants');
 const adminCategoryRoutes = require('./routes/admin/categories');
+const adminProcessRuleRoutes = require('./routes/admin/process-rule');
 
 app.use('/admin/products', adminProductRoutes);
 app.use('/admin/variants', adminVariantRoutes);
 app.use('/admin/categories', adminCategoryRoutes);
+app.use('/admin/process-rules', adminProcessRuleRoutes);
 
 app.use(errorHandlerMiddleware);
 

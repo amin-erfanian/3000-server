@@ -20,7 +20,12 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-
+    code: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     // Relationships
     category: {
       type: mongoose.Schema.Types.ObjectId,

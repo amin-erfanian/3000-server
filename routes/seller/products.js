@@ -10,6 +10,7 @@ const SellerProduct = require('../../models/seller-product');
 const normalizePersian = require('../../utilities/normalize-persian');
 const sellerProductService = require('../../services/sellerProduct.service');
 const mongoose = require('mongoose');
+const generateProductCode = require('../../utilities/generate-product-code');
 
 router.use(authMiddleware);
 router.use(roleMiddleware(['seller']));
@@ -275,6 +276,8 @@ router.post('/create', async (req, res, next) => {
     const categoryId = typeof category === 'object' ? category._id : category;
     const brandId = brand ? (typeof brand === 'object' ? brand._id : brand) : undefined;
 
+    const code = await generateProductCode();
+
     // Prepare product data
     const productData = {
       titleFa,
@@ -292,6 +295,7 @@ router.post('/create', async (req, res, next) => {
       videos: videos || [],
       minBasketQuantity: minBasketQuantity || 1,
       marketStatus: marketStatus || 'marketable',
+      code,
       createdBy: sellerId,
       status: 'pending',
     };

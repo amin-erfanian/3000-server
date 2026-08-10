@@ -11,7 +11,8 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 
 // Use same connection as main app
-const DB_PORT = process.env.DB_PORT || 27027;
+const DB_PORT = process.env.DB_PORT;
+const DB_PASS = process.env.DB_PASS;
 
 // Import all seed functions
 const { seedColors } = require('./colors');
@@ -28,7 +29,7 @@ async function runAllSeeds() {
 
   try {
     // Connect once for all seeds
-    await mongoose.connect(`mongodb://admin:AminErf9991@localhost:${DB_PORT}/store3000?authSource=admin`);
+    await mongoose.connect(`mongodb://admin:${DB_PASS}@localhost:${DB_PORT}/store3000?authSource=admin`);
     console.log('✓ Connected to MongoDB\n');
 
     // Run seeds in order (with dependencies)

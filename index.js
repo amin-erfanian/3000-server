@@ -21,7 +21,7 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
-await mongoose.connect(`mongodb://admin:${DB_PASS}@localhost:${DB_PORT}/store3000?authSource=admin`);
+mongoose.connect(`mongodb://admin:${DB_PASS}@localhost:${DB_PORT}/store3000?authSource=admin`);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));

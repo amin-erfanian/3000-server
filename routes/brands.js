@@ -54,7 +54,7 @@ const slugify = (text) =>
 
 // POST create a brand
 router.post('/', authMiddleware, roleMiddleware(['seller']), async (req, res) => {
-  const { titleFa, titleEn, categories = [] } = req.body;
+  const { titleFa, titleEn, categories = [], logo } = req.body;
 
   if (!titleFa) {
     throw new CustomError(400, 'BAD_REQUEST', {
@@ -87,6 +87,7 @@ router.post('/', authMiddleware, roleMiddleware(['seller']), async (req, res) =>
     categories,
     sellers: [req.seller._id],
     slug,
+    logo,
     status: 'pending',
   });
 

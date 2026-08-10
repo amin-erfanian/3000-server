@@ -11,42 +11,6 @@ const normalizePersian = require('../../utilities/normalize-persian');
 const sellerProductService = require('../../services/sellerProduct.service');
 const mongoose = require('mongoose');
 
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Multer configuration for image uploads
-const uploadDir = path.join(__dirname, '../../uploads/products');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `product-${uniqueSuffix}${ext}`);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('فرمت فایل نامعتبر است. فقط jpeg, png و webp مجاز است.'), false);
-  }
-};
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter,
-});
-
 router.use(authMiddleware);
 router.use(roleMiddleware(['seller']));
 
@@ -494,34 +458,6 @@ router.put('/:productId', async (req, res, next) => {
       });
     }
     next(error);
-  }
-});
-
-router.post('/upload-images', upload.array('images', 10), async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'هیچ فایلی آپلود نشده است',
-      });
-    }
-
-    const images = req.files.map((file) => ({
-      url: `/uploads/products/${file.filename}`,
-      filename: file.filename,
-    }));
-
-    res.status(200).json({
-      success: true,
-      images: images.map((img) => img.url),
-      message: 'تصاویر با موفقیت آپلود شدند',
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'خطا در آپلود تصاویر',
-    });
   }
 });
 

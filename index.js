@@ -61,10 +61,12 @@ app.use('/buyer/variants', buyerVariantRoutes);
 const sellerProductRoutes = require('./routes/seller/products');
 const sellerVariantRoutes = require('./routes/seller/variants');
 const sellerProfileRoutes = require('./routes/seller/profile');
+const sellerStorageRoutes = require('./routes/seller/storage');
 
 app.use('/seller/products', sellerProductRoutes);
 app.use('/seller/variants', sellerVariantRoutes);
 app.use('/seller/profile', sellerProfileRoutes);
+app.use('/seller/storage', sellerStorageRoutes);
 
 // Admin routes
 const adminProductRoutes = require('./routes/admin/products');

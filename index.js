@@ -56,8 +56,8 @@ app.use('/reviews', reviewRoutes);
 app.use('/warranties', warrantyRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/process-rules', processRuleRoutes);
-app.use('/buyer/products', buyerProductRoutes);
-app.use('/buyer/variants', buyerVariantRoutes);
+app.use('/products', buyerProductRoutes);
+app.use('/variants', buyerVariantRoutes);
 
 // Seller routes
 const sellerProductRoutes = require('./routes/seller/products');

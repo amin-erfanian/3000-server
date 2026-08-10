@@ -41,6 +41,34 @@ class ProductService {
     }
   }
 
+  async getProductsByCategorySlug(categorySlug, options = {}) {
+    try {
+      const Category = require('../models/category');
+      const category = await Category.findOne({ slug: categorySlug }).lean();
+
+      if (!category) {
+        throw new Error('دسته‌بندی یافت نشد');
+      }
+
+      const filters = {
+        category: category._id,
+        isActive: true,
+        status: 'active',
+      };
+
+      const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+
+      const result = await this.getProducts(filters, { page, limit }, { sortBy, sortOrder });
+
+      return {
+        ...result,
+        category,
+      };
+    } catch (error) {
+      throw new Error(`خطا در دریافت محصولات دسته‌بندی: ${error.message}`);
+    }
+  }
+
   async getProductById(id) {
     try {
       if (!mongoose.Types.ObjectId.isValid(id)) {

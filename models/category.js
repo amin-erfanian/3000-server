@@ -40,11 +40,8 @@ const categorySchema = new mongoose.Schema(
     attributes: {
       type: [
         {
-          key: { type: String, required: true },
-          label: { type: String, required: true },
-          type: { type: String, required: true },
-          required: { type: Boolean, default: false },
-          placeholder: { type: String, default: '' },
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Attribute',
         },
       ],
       default: [],
@@ -89,7 +86,9 @@ categorySchema.methods.getBreadcrumb = async function () {
 
 // Static method to get category tree (for menus/navigation)
 categorySchema.statics.getTree = async function (parentId = null) {
-  const categories = await this.find({ parent: parentId, isActive: true }).lean();
+  const categories = await this.find({ parent: parentId, isActive: true })
+    .populate('attributes')
+    .lean();
 
   for (const category of categories) {
     category.children = await this.getTree(category._id);

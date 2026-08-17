@@ -29,6 +29,7 @@ router.get('/', async (req, res) => {
   const [categories, total] = await Promise.all([
     Category.find(filter)
       .populate('parent', 'titleFa titleEn slug')
+      .populate('attributes')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit)),
@@ -54,7 +55,9 @@ router.get('/tree', async (req, res) => {
 
 // GET category by ID
 router.get('/:id', async (req, res) => {
-  const category = await Category.findById(req.params.id).populate('parent', 'titleFa titleEn slug');
+  const category = await Category.findById(req.params.id)
+    .populate('parent', 'titleFa titleEn slug')
+    .populate('attributes');
 
   if (!category) {
     throw new CustomError(404, 'NOT_FOUND', {
@@ -68,10 +71,9 @@ router.get('/:id', async (req, res) => {
 
 // GET category by slug
 router.get('/slug/:slug', async (req, res) => {
-  const category = await Category.findOne({ slug: req.params.slug }).populate(
-    'parent',
-    'titleFa titleEn slug',
-  );
+  const category = await Category.findOne({ slug: req.params.slug })
+    .populate('parent', 'titleFa titleEn slug')
+    .populate('attributes');
 
   if (!category) {
     throw new CustomError(404, 'NOT_FOUND', {
@@ -94,7 +96,9 @@ router.get('/:id/breadcrumb', async (req, res) => {
     });
   }
 
-  const breadcrumb = await category.getBreadcrumb();
+  const breadcrumb = await Category.populate(await category.getBreadcrumb(), {
+    path: 'attributes',
+  });
   res.json(breadcrumb);
 });
 

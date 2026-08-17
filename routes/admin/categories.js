@@ -11,18 +11,8 @@ router.use(roleMiddleware(['admin']));
 
 // POST create new category
 router.post('/', async (req, res) => {
-  const {
-    titleFa,
-    titleEn,
-    slug,
-    parent,
-    image,
-    returnReasonAlert,
-    isActive,
-    attributes,
-    commission,
-    publicIds,
-  } = req.body;
+  const { titleFa, titleEn, slug, parent, image, returnReasonAlert, isActive, commission, publicIds } =
+    req.body;
 
   if (!titleFa || !slug) {
     throw new CustomError(400, 'VALIDATION_ERROR', {
@@ -59,14 +49,15 @@ router.post('/', async (req, res) => {
     image: image || '',
     returnReasonAlert: returnReasonAlert || '',
     isActive: isActive !== undefined ? isActive : true,
-    attributes: attributes || [],
     commission: commission !== undefined ? commission : 0,
     publicIds: publicIds || [],
   });
 
   await category.save();
 
-  const populatedCategory = await Category.findById(category._id).populate('parent', 'titleFa titleEn slug');
+  const populatedCategory = await Category.findById(category._id)
+    .populate('parent', 'titleFa titleEn slug')
+    .populate('attributes');
 
   res.status(201).json(populatedCategory);
 });
@@ -139,7 +130,9 @@ router.put('/:id', async (req, res) => {
 
   await category.save();
 
-  const updatedCategory = await Category.findById(category._id).populate('parent', 'titleFa titleEn slug');
+  const updatedCategory = await Category.findById(category._id)
+    .populate('parent', 'titleFa titleEn slug')
+    .populate('attributes');
 
   res.json(updatedCategory);
 });
@@ -199,7 +192,9 @@ router.put('/:id/attributes', async (req, res) => {
     req.params.id,
     { attributes },
     { new: true, runValidators: true },
-  ).populate('parent', 'titleFa titleEn slug');
+  )
+    .populate('parent', 'titleFa titleEn slug')
+    .populate('attributes');
 
   if (!category) {
     throw new CustomError(404, 'NOT_FOUND', {

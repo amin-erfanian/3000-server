@@ -74,11 +74,13 @@ app.use('/seller/storage', sellerStorageRoutes);
 const adminProductRoutes = require('./routes/admin/products');
 const adminVariantRoutes = require('./routes/admin/variants');
 const adminCategoryRoutes = require('./routes/admin/categories');
+const adminAttributeRoutes = require('./routes/admin/attributes');
 const adminProcessRuleRoutes = require('./routes/admin/process-rule');
 
 app.use('/admin/products', adminProductRoutes);
 app.use('/admin/variants', adminVariantRoutes);
 app.use('/admin/categories', adminCategoryRoutes);
+app.use('/admin/attributes', adminAttributeRoutes);
 app.use('/admin/process-rules', adminProcessRuleRoutes);
 
 app.use(errorHandlerMiddleware);

@@ -12,6 +12,7 @@ const Seller = require('./seller');
 const Admin = require('./admin');
 const Variant = require('./variant');
 const Warranty = require('./warranty');
+const Attribute = require('./attribute');
 
 module.exports = {
   // Core Models
@@ -35,4 +36,5 @@ module.exports = {
   Admin,
   Variant,
   Warranty,
+  Attribute,
 };

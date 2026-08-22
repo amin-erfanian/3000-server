@@ -8,6 +8,12 @@ const attributeSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    header: {
+      type: String,
+      index: true,
+      required: false,
+      default: '',
+    },
     label: {
       type: String,
       required: true,
@@ -15,6 +21,10 @@ const attributeSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
+    },
+    options: {
+      type: [String],
+      default: [],
     },
     required: {
       type: Boolean,

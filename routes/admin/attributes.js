@@ -17,9 +17,19 @@ router.get('/', async (req, res) => {
   res.json(attributes);
 });
 
+// GET unique headers
+router.get('/headers', async (req, res) => {
+  const headers = await Attribute.distinct('header', {
+    isActive: true,
+    header: { $ne: '' },
+  });
+
+  res.json(headers);
+});
+
 // POST create new attribute
 router.post('/', async (req, res) => {
-  const { key, label, type, required, placeholder, isActive } = req.body;
+  const { key, header, label, type, options, required, placeholder, isActive } = req.body;
 
   if (!key || !label || !type) {
     throw new CustomError(400, 'VALIDATION_ERROR', {
@@ -39,8 +49,10 @@ router.post('/', async (req, res) => {
 
   const attribute = new Attribute({
     key,
+    header: header || '',
     label,
     type,
+    options: Array.isArray(options) ? options : [],
     required: required !== undefined ? required : false,
     placeholder: placeholder || '',
     isActive: isActive !== undefined ? isActive : true,
@@ -49,6 +61,42 @@ router.post('/', async (req, res) => {
   await attribute.save();
 
   res.status(201).json(attribute);
+});
+
+// PUT update an attribute
+router.put('/:id', async (req, res) => {
+  const { key, header, label, type, options, required, placeholder, isActive } = req.body;
+
+  const attribute = await Attribute.findById(req.params.id);
+  if (!attribute) {
+    throw new CustomError(404, 'ATTRIBUTE_NOT_FOUND', {
+      fa: 'ویژگی یافت نشد.',
+      en: 'Attribute not found.',
+    });
+  }
+
+  if (key !== undefined && key !== attribute.key) {
+    const existingAttribute = await Attribute.findOne({ key, _id: { $ne: attribute._id } });
+    if (existingAttribute) {
+      throw new CustomError(409, 'DUPLICATE_KEY', {
+        fa: 'کلید ویژگی تکراری است.',
+        en: 'Attribute key already exists.',
+      });
+    }
+    attribute.key = key;
+  }
+
+  if (header !== undefined) attribute.header = header;
+  if (label !== undefined) attribute.label = label;
+  if (type !== undefined) attribute.type = type;
+  if (options !== undefined) attribute.options = Array.isArray(options) ? options : attribute.options;
+  if (required !== undefined) attribute.required = required;
+  if (placeholder !== undefined) attribute.placeholder = placeholder;
+  if (isActive !== undefined) attribute.isActive = isActive;
+
+  await attribute.save();
+
+  res.json(attribute);
 });
 
 // POST add a list of attributes to a category

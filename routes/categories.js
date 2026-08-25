@@ -47,10 +47,12 @@ router.get('/', async (req, res) => {
   });
 });
 
-// GET category tree (for navigation/menus)
+// GET all categories (flat; client assembles the tree)
 router.get('/tree', async (req, res) => {
-  const tree = await Category.getTree();
-  res.json(tree);
+  const categories = await Category.find({ isActive: true })
+    .select('titleFa titleEn slug parent')
+    .lean();
+  res.json(categories);
 });
 
 // GET category by ID

@@ -84,18 +84,5 @@ categorySchema.methods.getBreadcrumb = async function () {
   return breadcrumb;
 };
 
-// Static method to get category tree (for menus/navigation)
-categorySchema.statics.getTree = async function (parentId = null) {
-  const categories = await this.find({ parent: parentId, isActive: true })
-    .populate('attributes')
-    .lean();
-
-  for (const category of categories) {
-    category.children = await this.getTree(category._id);
-  }
-
-  return categories;
-};
-
 const Category = mongoose.model('Category', categorySchema);
 module.exports = Category;

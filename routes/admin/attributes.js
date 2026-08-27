@@ -63,6 +63,73 @@ router.post('/', async (req, res) => {
   res.status(201).json(attribute);
 });
 
+// POST batch create attributes
+router.post('/batch', async (req, res) => {
+  const { attributes } = req.body;
+
+  if (!Array.isArray(attributes) || attributes.length === 0) {
+    throw new CustomError(400, 'VALIDATION_ERROR', {
+      fa: 'attributes باید یک آرایه غیرخالی باشد.',
+      en: 'attributes must be a non-empty array.',
+    });
+  }
+
+  // Validate each attribute has required fields
+  const invalidItems = [];
+  attributes.forEach((attr, index) => {
+    if (!attr.key || !attr.label || !attr.type) {
+      invalidItems.push(index);
+    }
+  });
+
+  if (invalidItems.length > 0) {
+    throw new CustomError(400, 'VALIDATION_ERROR', {
+      fa: `آیتم‌های ${invalidItems.join(', ')} فاقد فیلدهای الزامی هستند.`,
+      en: `Items at indices ${invalidItems.join(', ')} are missing required fields (key, label, type).`,
+    });
+  }
+
+  // Check for duplicate keys within the batch
+  const keys = attributes.map((a) => a.key);
+  const duplicateKeys = keys.filter((key, index) => keys.indexOf(key) !== index);
+  if (duplicateKeys.length > 0) {
+    throw new CustomError(400, 'DUPLICATE_KEY_IN_BATCH', {
+      fa: `کلیدهای تکراری در درخواست: ${[...new Set(duplicateKeys)].join(', ')}`,
+      en: `Duplicate keys in batch: ${[...new Set(duplicateKeys)].join(', ')}`,
+    });
+  }
+
+  // Check for existing keys in database
+  const existingAttributes = await Attribute.find({ key: { $in: keys } }).select('key');
+  if (existingAttributes.length > 0) {
+    const existingKeys = existingAttributes.map((a) => a.key);
+    throw new CustomError(409, 'DUPLICATE_KEY', {
+      fa: `کلیدهای موجود در پایگاه داده: ${existingKeys.join(', ')}`,
+      en: `Keys already exist in database: ${existingKeys.join(', ')}`,
+    });
+  }
+
+  // Prepare documents with defaults
+  const documents = attributes.map((attr) => ({
+    key: attr.key,
+    header: attr.header || '',
+    label: attr.label,
+    type: attr.type,
+    options: Array.isArray(attr.options) ? attr.options : [],
+    required: attr.required !== undefined ? attr.required : false,
+    placeholder: attr.placeholder || '',
+    isActive: attr.isActive !== undefined ? attr.isActive : true,
+  }));
+
+  // Insert all attributes atomically
+  const createdAttributes = await Attribute.insertMany(documents, { ordered: true });
+
+  res.status(201).json({
+    count: createdAttributes.length,
+    attributes: createdAttributes,
+  });
+});
+
 // PUT update an attribute
 router.put('/:id', async (req, res) => {
   const { key, header, label, type, options, required, placeholder, isActive } = req.body;

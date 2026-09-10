@@ -89,28 +89,51 @@ router.post('/batch', async (req, res) => {
     });
   }
 
-  // Check for duplicate keys within the batch
-  const keys = attributes.map((a) => a.key);
-  const duplicateKeys = keys.filter((key, index) => keys.indexOf(key) !== index);
-  if (duplicateKeys.length > 0) {
-    throw new CustomError(400, 'DUPLICATE_KEY_IN_BATCH', {
-      fa: `کلیدهای تکراری در درخواست: ${[...new Set(duplicateKeys)].join(', ')}`,
-      en: `Duplicate keys in batch: ${[...new Set(duplicateKeys)].join(', ')}`,
-    });
+  // Dedupe by key within the batch — the first occurrence wins, later
+  // occurrences only add their categories to the same attribute.
+  const attributesByKey = new Map();
+  for (const attr of attributes) {
+    if (!attributesByKey.has(attr.key)) {
+      attributesByKey.set(attr.key, {
+        ...attr,
+        categoryIds: [...(attr.categoryIds || [])],
+      });
+    } else {
+      const first = attributesByKey.get(attr.key);
+      for (const categoryId of attr.categoryIds || []) {
+        if (!first.categoryIds.includes(categoryId)) {
+          first.categoryIds.push(categoryId);
+        }
+      }
+    }
   }
+  const uniqueAttributes = [...attributesByKey.values()];
 
-  // Check for existing keys in database
+  // Attributes whose keys already exist in the database are not re-created;
+  // they are only assigned to their categories further below.
+  const keys = uniqueAttributes.map((a) => a.key);
   const existingAttributes = await Attribute.find({ key: { $in: keys } }).select('key');
-  if (existingAttributes.length > 0) {
-    const existingKeys = existingAttributes.map((a) => a.key);
-    throw new CustomError(409, 'DUPLICATE_KEY', {
-      fa: `کلیدهای موجود در پایگاه داده: ${existingKeys.join(', ')}`,
-      en: `Keys already exist in database: ${existingKeys.join(', ')}`,
-    });
+  const existingIdByKey = new Map(
+    existingAttributes.map((a) => [a.key, a._id]),
+  );
+  const newAttributes = uniqueAttributes.filter((a) => !existingIdByKey.has(a.key));
+
+  // Each attribute carries the list of categories it must be assigned to
+  const categoryIds = [
+    ...new Set(uniqueAttributes.flatMap((a) => a.categoryIds)),
+  ];
+  if (categoryIds.length > 0) {
+    const foundCategories = await Category.countDocuments({ _id: { $in: categoryIds } });
+    if (foundCategories !== categoryIds.length) {
+      throw new CustomError(404, 'CATEGORY_NOT_FOUND', {
+        fa: 'یک یا چند دسته‌بندی یافت نشد.',
+        en: 'One or more categories not found.',
+      });
+    }
   }
 
   // Prepare documents with defaults
-  const documents = attributes.map((attr) => ({
+  const documents = newAttributes.map((attr) => ({
     key: attr.key,
     header: attr.header || '',
     label: attr.label,
@@ -121,12 +144,36 @@ router.post('/batch', async (req, res) => {
     isActive: attr.isActive !== undefined ? attr.isActive : true,
   }));
 
-  // Insert all attributes atomically
-  const createdAttributes = await Attribute.insertMany(documents, { ordered: true });
+  // Insert all new attributes atomically
+  const createdAttributes =
+    documents.length > 0
+      ? await Attribute.insertMany(documents, { ordered: true })
+      : [];
+
+  // Assign every attribute — newly created or already existing — to its
+  // categories. $addToSet skips assignments that are already in place.
+  const idByKey = new Map(existingIdByKey);
+  for (const attribute of createdAttributes) {
+    idByKey.set(attribute.key, attribute._id);
+  }
+
+  const updates = uniqueAttributes
+    .filter((attr) => attr.categoryIds.length > 0 && idByKey.has(attr.key))
+    .map((attr) => ({
+      updateOne: {
+        filter: { _id: { $in: attr.categoryIds } },
+        update: { $addToSet: { attributes: idByKey.get(attr.key) } },
+      },
+    }));
+
+  if (updates.length > 0) {
+    await Category.bulkWrite(updates, { ordered: true });
+  }
 
   res.status(201).json({
     count: createdAttributes.length,
     attributes: createdAttributes,
+    existingKeys: [...existingIdByKey.keys()],
   });
 });
 

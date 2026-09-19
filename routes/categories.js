@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
 
 // GET all categories (flat; client assembles the tree)
 router.get('/tree', async (req, res) => {
-  const categories = await Category.find({ isActive: true }).select().lean();
+  const categories = await Category.find({ isActive: true }).populate('attributes').lean();
   res.json(categories);
 });
 

@@ -34,6 +34,10 @@ const attributeSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    showToBuyer: {
+      type: Boolean,
+      default: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

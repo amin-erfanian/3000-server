@@ -29,7 +29,7 @@ router.get('/headers', async (req, res) => {
 
 // POST create new attribute
 router.post('/', async (req, res) => {
-  const { key, header, label, type, options, required, placeholder, isActive } = req.body;
+  const { key, header, label, type, options, required, placeholder, showToBuyer, isActive } = req.body;
 
   if (!key || !label || !type) {
     throw new CustomError(400, 'VALIDATION_ERROR', {
@@ -55,6 +55,7 @@ router.post('/', async (req, res) => {
     options: Array.isArray(options) ? options : [],
     required: required !== undefined ? required : false,
     placeholder: placeholder || '',
+    showToBuyer,
     isActive: isActive !== undefined ? isActive : true,
   });
 
@@ -113,15 +114,11 @@ router.post('/batch', async (req, res) => {
   // they are only assigned to their categories further below.
   const keys = uniqueAttributes.map((a) => a.key);
   const existingAttributes = await Attribute.find({ key: { $in: keys } }).select('key');
-  const existingIdByKey = new Map(
-    existingAttributes.map((a) => [a.key, a._id]),
-  );
+  const existingIdByKey = new Map(existingAttributes.map((a) => [a.key, a._id]));
   const newAttributes = uniqueAttributes.filter((a) => !existingIdByKey.has(a.key));
 
   // Each attribute carries the list of categories it must be assigned to
-  const categoryIds = [
-    ...new Set(uniqueAttributes.flatMap((a) => a.categoryIds)),
-  ];
+  const categoryIds = [...new Set(uniqueAttributes.flatMap((a) => a.categoryIds))];
   if (categoryIds.length > 0) {
     const foundCategories = await Category.countDocuments({ _id: { $in: categoryIds } });
     if (foundCategories !== categoryIds.length) {
@@ -141,14 +138,13 @@ router.post('/batch', async (req, res) => {
     options: Array.isArray(attr.options) ? attr.options : [],
     required: attr.required !== undefined ? attr.required : false,
     placeholder: attr.placeholder || '',
+    showToBuyer: attr.showToBuyer,
     isActive: attr.isActive !== undefined ? attr.isActive : true,
   }));
 
   // Insert all new attributes atomically
   const createdAttributes =
-    documents.length > 0
-      ? await Attribute.insertMany(documents, { ordered: true })
-      : [];
+    documents.length > 0 ? await Attribute.insertMany(documents, { ordered: true }) : [];
 
   // Assign every attribute — newly created or already existing — to its
   // categories. $addToSet skips assignments that are already in place.

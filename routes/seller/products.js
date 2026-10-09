@@ -364,8 +364,6 @@ router.put('/:productId', async (req, res, next) => {
       });
     }
 
-    console.log(req.body);
-
     // Extract product data from request
     const {
       titleFa,
@@ -376,7 +374,7 @@ router.put('/:productId', async (req, res, next) => {
       sku,
       dimensions,
       weight,
-      referencePrice,
+      referencePrice = 0,
       commission,
       images,
       videos,

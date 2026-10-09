@@ -382,6 +382,7 @@ router.put('/:productId', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
+      isFake,
       attributes,
     } = req.body;
 
@@ -437,6 +438,7 @@ router.put('/:productId', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
+      isFake,
       attributes,
       status: 'pending',
       slug: updatedSlug,

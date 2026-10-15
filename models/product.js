@@ -48,7 +48,9 @@ const productSchema = new mongoose.Schema(
         {
           key: { type: String, required: true },
           label: { type: String, required: true },
-          value: { type: String, required: true },
+          // String for text/number/boolean attributes, array of strings for
+          // select attributes (multi-select)
+          value: { type: mongoose.Schema.Types.Mixed, required: true },
         },
       ],
       default: [],
@@ -68,6 +70,33 @@ const productSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       default: 0,
+    },
+
+    // Seller requests to change the reference price, reviewed by admin
+    referencePriceRequests: {
+      type: [
+        {
+          seller: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Seller',
+            required: true,
+          },
+          offeredPrice: {
+            type: Number,
+            min: 0,
+            required: true,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+          isWatched: {
+            type: Boolean,
+            default: false,
+          },
+        },
+      ],
+      default: [],
     },
 
     images: {

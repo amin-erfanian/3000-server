@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const productService = require('../../services/product.service');
 const authMiddleware = require('../../middlewares/authorization');
@@ -19,11 +20,26 @@ router.get('/', async (req, res, next) => {
       code,
       title,
       phone,
+      status,
     } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
-    const filters = { status: 'pending' };
+    const filters = {};
+
+    if (status) {
+      const statuses = String(status).split(',');
+      const allowedStatuses = Product.schema.path('status').enumValues;
+
+      if (!statuses.every((item) => allowedStatuses.includes(item))) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'وضعیت نامعتبر است',
+        });
+      }
+
+      filters.status = { $in: statuses };
+    }
 
     if (code || title || phone) {
       const sellerQuery = {};
@@ -78,6 +94,123 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * @route   GET /api/admin/products/reference-price-requests
+ * @desc    List products with unwatched reference price requests (only unwatched requests are returned)
+ * @access  Private (Admin)
+ */
+router.get('/reference-price-requests', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+    const filters = { referencePriceRequests: { $elemMatch: { isWatched: false } } };
+
+    const [products, total_rows] = await Promise.all([
+      Product.find(filters)
+        .select('titleFa titleEn code images referencePrice referencePriceRequests')
+        .populate('referencePriceRequests.seller', 'title phone code')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Product.countDocuments(filters),
+    ]);
+
+    const items = products.map((product) => ({
+      ...product,
+      referencePriceRequests: product.referencePriceRequests.filter(
+        (request) => !request.isWatched,
+      ),
+    }));
+
+    res.json({
+      status: 'ok',
+      data: {
+        pager: {
+          page: pageNum,
+          item_per_page: limitNum,
+          total_pages: Math.ceil(total_rows / limitNum),
+          total_rows,
+        },
+        items,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PATCH /api/admin/products/:productId/reference-price-requests/watched
+ * @desc    Mark reference price requests as watched without changing the price
+ * @access  Private (Admin)
+ * @body    { requestIds?: string[] } - when omitted, all requests are marked as watched
+ */
+router.patch('/:productId/reference-price-requests/watched', async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const { requestIds } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'شناسه محصول نامعتبر است',
+      });
+    }
+
+    if (
+      requestIds !== undefined &&
+      (!Array.isArray(requestIds) ||
+        !requestIds.length ||
+        !requestIds.every((id) => mongoose.Types.ObjectId.isValid(id)))
+    ) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'شناسه درخواست‌ها نامعتبر است',
+      });
+    }
+
+    const product = requestIds
+      ? await Product.findByIdAndUpdate(
+          productId,
+          { $set: { 'referencePriceRequests.$[request].isWatched': true } },
+          {
+            new: true,
+            arrayFilters: [
+              {
+                'request._id': {
+                  $in: requestIds.map((id) => new mongoose.Types.ObjectId(id)),
+                },
+              },
+            ],
+          },
+        ).lean()
+      : await Product.findByIdAndUpdate(
+          productId,
+          { $set: { 'referencePriceRequests.$[].isWatched': true } },
+          { new: true },
+        ).lean();
+
+    if (!product) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'محصول یافت نشد',
+      });
+    }
+
+    res.json({
+      status: 'ok',
+      data: product,
+      message: 'درخواست‌ها به عنوان دیده‌شده علامت‌گذاری شدند',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route   GET /api/admin/products/:id
  * @desc    Get product details (for viewing variant's product info)
  * @access  Private (Admin)
@@ -100,6 +233,59 @@ router.get('/:productId/variants', async (req, res, next) => {
   try {
     const result = await productService.getProductVariants(req.params.productId);
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PUT /api/admin/products/:productId/reference-price
+ * @desc    Update a product's reference price and mark seller requests as watched
+ * @access  Private (Admin)
+ * @body    { referencePrice: number }
+ */
+router.put('/:productId/reference-price', async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const referencePrice = Number(req.body.referencePrice);
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'شناسه محصول نامعتبر است',
+      });
+    }
+
+    if (!Number.isFinite(referencePrice) || referencePrice < 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'قیمت مرجع نامعتبر است',
+      });
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      productId,
+      {
+        $set: {
+          referencePrice,
+          'referencePriceRequests.$[].isWatched': true,
+        },
+      },
+      { new: true, runValidators: true },
+    ).lean();
+
+    if (!product) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'محصول یافت نشد',
+      });
+    }
+
+    res.json({
+      status: 'ok',
+      data: product,
+      message: 'قیمت مرجع با موفقیت به‌روزرسانی شد',
+    });
   } catch (error) {
     next(error);
   }

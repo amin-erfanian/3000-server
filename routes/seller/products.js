@@ -239,6 +239,7 @@ router.post('/create', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
+      isFake = false,
       attributes,
     } = req.body;
 
@@ -296,6 +297,7 @@ router.post('/create', async (req, res, next) => {
       videos: videos || [],
       minBasketQuantity: minBasketQuantity || 1,
       marketStatus: marketStatus || 'marketable',
+      properties: { isFake: isFake === true },
       attributes: attributes || [],
       code,
       createdBy: sellerId,
@@ -436,7 +438,8 @@ router.put('/:productId', async (req, res, next) => {
       videos,
       minBasketQuantity,
       marketStatus,
-      isFake,
+      // Stored under `properties`; a top-level `isFake` is dropped by the schema
+      ...(typeof isFake === 'boolean' && { 'properties.isFake': isFake }),
       attributes,
       status: 'pending',
       slug: updatedSlug,
@@ -465,6 +468,73 @@ router.put('/:productId', async (req, res, next) => {
         message: 'محصولی با این عنوان قبلاً ثبت شده است',
       });
     }
+    next(error);
+  }
+});
+
+/**
+ * @route   POST /api/seller/products/:productId/reference-price-request
+ * @desc    Request a change of the product reference price
+ * @access  Private (Seller)
+ * @body    { offeredPrice: number }
+ */
+router.post('/:productId/reference-price-request', async (req, res, next) => {
+  try {
+    const sellerId = req.seller._id;
+    const { productId } = req.params;
+    const offeredPrice = Number(req.body.offeredPrice);
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'شناسه محصول نامعتبر است',
+      });
+    }
+
+    if (!Number.isFinite(offeredPrice) || offeredPrice <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'قیمت پیشنهادی نامعتبر است',
+      });
+    }
+
+    const sellerProduct = await SellerProduct.exists({
+      seller: sellerId,
+      product: productId,
+    });
+
+    if (!sellerProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'محصول یافت نشد یا دسترسی به آن ندارید',
+      });
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      productId,
+      {
+        $push: {
+          referencePriceRequests: { seller: sellerId, offeredPrice },
+        },
+      },
+      { new: true, runValidators: true },
+    ).lean();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'محصول یافت نشد',
+      });
+    }
+
+    const request = product.referencePriceRequests[product.referencePriceRequests.length - 1];
+
+    res.status(201).json({
+      success: true,
+      data: request,
+      message: 'درخواست تغییر قیمت مرجع با موفقیت ثبت شد',
+    });
+  } catch (error) {
     next(error);
   }
 });
@@ -571,9 +641,18 @@ router.get('/my-catalog', async (req, res) => {
         {
           $lookup: {
             from: 'variants',
-            let: { sellerProductId: '$_id' },
+            // Variants reference `product` and `seller` directly (there is no
+            // `sellerProduct` field), so match on both. `product` is already
+            // the unwound product document at this stage.
+            let: { productId: '$product._id', sellerId: '$seller' },
             pipeline: [
-              { $match: { $expr: { $eq: ['$sellerProduct', '$$sellerProductId'] } } },
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$product', '$$productId'] }, { $eq: ['$seller', '$$sellerId'] }],
+                  },
+                },
+              },
               { $count: 'total' },
             ],
             as: 'variantCount',

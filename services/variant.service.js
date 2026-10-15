@@ -203,6 +203,10 @@ class VariantService {
         throw new Error('variant with this color and warranty combination already exists');
       }
 
+      // First variant of a product without a reference price sets it
+      const isFirstVariant = !(await Variant.exists({ product: productId }));
+      const shouldSetReferencePrice = isFirstVariant && !product.referencePrice;
+
       // Calculate originalPrice: use price only if discountPercent is provided, else null
       const originalPrice = data.discountPercent != null ? priceNum : null;
 
@@ -233,6 +237,13 @@ class VariantService {
         discountPercent: data.discountPercent || 0,
         shipmentMethods,
       });
+
+      if (shouldSetReferencePrice) {
+        await Product.updateOne(
+          { _id: productId, referencePrice: { $in: [0, null] } },
+          { $set: { referencePrice: priceNum } },
+        );
+      }
 
       const variantsCount = await Variant.countDocuments({ product: productId });
 

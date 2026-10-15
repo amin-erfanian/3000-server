@@ -56,8 +56,6 @@ const productSchema = new mongoose.Schema(
         {
           key: { type: String, required: true },
           label: { type: String, required: true },
-          // String for text/number/boolean attributes, array of strings for
-          // select attributes (multi-select)
           value: { type: mongoose.Schema.Types.Mixed, required: true },
         },
       ],

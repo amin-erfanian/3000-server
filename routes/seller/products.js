@@ -668,7 +668,7 @@ router.get('/my-catalog', async (req, res) => {
             'product.titleEn': 1,
             'product.images.main': 1,
             'product.status': 1,
-            'product.rejectionReason': 1,
+            'product.rejectionReasons': 1,
             'product.marketStatus': 1,
             'product.minBasketQuantity': 1,
             brand: { titleFa: '$brand.titleFa', slug: '$brand.slug' },
@@ -708,12 +708,7 @@ router.get('/my-catalog', async (req, res) => {
           variant_count: sp.variant_count,
           created_at: sp.createdAt,
           ...(sp.product.status === 'rejected' && {
-            rejectionReason: sp.product.rejectionReason || {
-              propertyKeys: [],
-              message: '',
-              rejectedAt: null,
-              rejectedBy: null,
-            },
+            rejectionReasons: sp.product.rejectionReasons || [],
           }),
           updated_at: sp.updatedAt,
         })),

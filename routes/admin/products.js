@@ -334,12 +334,13 @@ router.post('/:productId/approve', async (req, res) => {
  * @route   POST /api/admin/products/:productId/reject
  * @desc    Reject a product
  * @access  Private (Admin)
- * @body    { reason: string, propertyKeys?: string[] }
+ * @body    { rejectionReasons: { property: string, message: string }[] }
+ *          property is a dot path to the rejected field, e.g. titleFa or attributes.model
  */
 router.post('/:productId/reject', async (req, res) => {
   try {
     const adminId = req.user?._id || req.admin?._id;
-    const { reason, propertyKeys } = req.body;
+    const { rejectionReasons } = req.body;
 
     if (!adminId) {
       return res.status(401).json({
@@ -348,25 +349,10 @@ router.post('/:productId/reject', async (req, res) => {
       });
     }
 
-    if (!reason || reason.trim() === '') {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Rejection reason is required',
-      });
-    }
-
-    if (propertyKeys !== undefined && !Array.isArray(propertyKeys)) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'propertyKeys must be an array',
-      });
-    }
-
     const result = await productService.rejectProduct(
       req.params.productId,
       adminId,
-      reason,
-      propertyKeys || [],
+      rejectionReasons,
     );
 
     res.json({
@@ -376,7 +362,7 @@ router.post('/:productId/reject', async (req, res) => {
     });
   } catch (error) {
     const message = error?.message || 'Failed to reject product';
-    const statusCode = /نامعتبر|invalid|required/i.test(message)
+    const statusCode = /نامعتبر|الزامی|یک بار|invalid|required/i.test(message)
       ? 400
       : /یافت نشد|not found/i.test(message)
         ? 404

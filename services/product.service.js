@@ -2,6 +2,14 @@
 const mongoose = require('mongoose');
 const Product = require('../models/product');
 const Variant = require('../models/variant');
+const Category = require('../models/category');
+const CustomError = require('../classes/custom-error');
+
+const isEmptyAttributeValue = (value) =>
+  value === undefined ||
+  value === null ||
+  (typeof value === 'string' && !value.trim()) ||
+  (Array.isArray(value) && !value.length);
 
 class ProductService {
   /**
@@ -311,10 +319,43 @@ class ProductService {
   }
 
   /**
+   * Ensure every required, active attribute of the category has a value in the product attributes
+   */
+  async validateRequiredAttributes(categoryId, attributes = []) {
+    if (!categoryId || !mongoose.Types.ObjectId.isValid(categoryId)) return;
+
+    const category = await Category.findById(categoryId)
+      .select('attributes')
+      .populate({ path: 'attributes', match: { required: true, isActive: true }, select: 'key label' })
+      .lean();
+
+    if (!category) {
+      throw new CustomError(400, 'VALIDATION_ERROR', {
+        fa: 'دسته‌بندی یافت نشد',
+        en: 'Category not found',
+      });
+    }
+
+    const filledKeys = new Set(
+      (attributes || []).filter((attr) => attr && !isEmptyAttributeValue(attr.value)).map((attr) => attr.key),
+    );
+    const missing = category.attributes.filter((attr) => attr && !filledKeys.has(attr.key));
+
+    if (missing.length) {
+      throw new CustomError(400, 'MISSING_REQUIRED_ATTRIBUTES', {
+        fa: `مقدار ویژگی‌های الزامی وارد نشده است: ${missing.map((attr) => attr.label).join('، ')}`,
+        en: `Missing required attributes: ${missing.map((attr) => attr.key).join(', ')}`,
+      });
+    }
+  }
+
+  /**
    * ساخت محصول جدید
    */
   async createProduct(data) {
     try {
+      await this.validateRequiredAttributes(data.category, data.attributes);
+
       const product = new Product(data);
       await product.save();
 
@@ -324,6 +365,7 @@ class ProductService {
         message: 'محصول با موفقیت ایجاد شد',
       };
     } catch (error) {
+      if (error instanceof CustomError) throw error;
       throw new Error(`خطا در ایجاد محصول: ${error.message}`);
     }
   }
@@ -335,6 +377,18 @@ class ProductService {
     try {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new Error('شناسه محصول نامعتبر است');
+      }
+
+      // Category or attributes may change independently, so validate the resulting combination
+      if (data.category !== undefined || data.attributes !== undefined) {
+        const existing = await Product.findById(id).select('category attributes').lean();
+        if (!existing) {
+          throw new Error('محصول یافت نشد');
+        }
+        await this.validateRequiredAttributes(
+          data.category ?? existing.category,
+          data.attributes ?? existing.attributes,
+        );
       }
 
       const product = await Product.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
@@ -349,6 +403,7 @@ class ProductService {
         message: 'محصول با موفقیت به‌روزرسانی شد',
       };
     } catch (error) {
+      if (error instanceof CustomError) throw error;
       throw new Error(`خطا در به‌روزرسانی محصول: ${error.message}`);
     }
   }
@@ -381,17 +436,18 @@ class ProductService {
             status: 'approved',
             approvedBy: adminId,
             approvedAt: now,
-            rejectionReason: {
-              propertyKeys: [],
-              message: '',
-            },
-            rejectionIssues: [],
+            rejectionReasons: [],
+            rejectedAt: null,
+            rejectedBy: null,
           },
+          // legacy fields from the previous rejection structure
+          $unset: { rejectionReason: 1, rejectionIssues: 1 },
           $push: {
             approvalHistory: historyItem,
           },
         },
-        { new: true, runValidators: true },
+        // strict: false lets the $unset reach paths no longer in the schema
+        { new: true, runValidators: true, strict: false },
       )
         .populate('category', 'titleFa titleEn slug logo')
         .populate('brand', 'titleFa titleEn slug logo');
@@ -413,7 +469,11 @@ class ProductService {
   /**
    * Reject product (admin)
    */
-  async rejectProduct(productId, adminId, reason, propertyKeys = []) {
+  /**
+   * @param {Array<{ property: string, message: string }>} rejectionReasons
+   *   property is a dot path to the rejected field, e.g. titleFa or attributes.model
+   */
+  async rejectProduct(productId, adminId, rejectionReasons = []) {
     try {
       if (!mongoose.Types.ObjectId.isValid(productId)) {
         throw new Error('شناسه محصول نامعتبر است');
@@ -423,31 +483,31 @@ class ProductService {
         throw new Error('شناسه ادمین نامعتبر است');
       }
 
-      if (!reason || reason.trim() === '') {
-        throw new Error('توضیحات رد محصول الزامی است');
+      if (!Array.isArray(rejectionReasons) || !rejectionReasons.length) {
+        throw new Error('حداقل یک دلیل رد الزامی است');
       }
 
-      if (!Array.isArray(propertyKeys)) {
-        throw new Error('propertyKeys باید آرایه باشد');
-      }
-
-      const normalizedPropertyKeys = propertyKeys.map((key) => String(key || '').trim()).filter(Boolean);
-
-      const normalizedReason = reason.trim();
-      const now = new Date();
-
-      const rejectionIssues = normalizedPropertyKeys.map((field) => ({
-        field,
-        message: normalizedReason,
+      const normalizedReasons = rejectionReasons.map((item) => ({
+        property: typeof item?.property === 'string' ? item.property.trim() : '',
+        message: typeof item?.message === 'string' ? item.message.trim() : '',
       }));
+
+      if (normalizedReasons.some(({ property, message }) => !property || !message)) {
+        throw new Error('ویژگی و توضیحات هر دلیل رد الزامی است');
+      }
+
+      const properties = normalizedReasons.map(({ property }) => property);
+      if (new Set(properties).size !== properties.length) {
+        throw new Error('هر ویژگی فقط یک بار می‌تواند رد شود');
+      }
+
+      const now = new Date();
 
       const historyItem = {
         action: 'rejected',
         performedBy: adminId,
         performedAt: now,
-        reason: normalizedReason,
-        field: normalizedPropertyKeys[0] || '',
-        issues: rejectionIssues,
+        rejectionReasons: normalizedReasons,
       };
 
       const product = await Product.findByIdAndUpdate(
@@ -457,19 +517,18 @@ class ProductService {
             status: 'rejected',
             approvedBy: null,
             approvedAt: null,
-            rejectionReason: {
-              propertyKeys: normalizedPropertyKeys,
-              message: normalizedReason,
-              rejectedAt: now,
-              rejectedBy: adminId,
-            },
-            rejectionIssues,
+            rejectionReasons: normalizedReasons,
+            rejectedAt: now,
+            rejectedBy: adminId,
           },
+          // legacy fields from the previous rejection structure
+          $unset: { rejectionReason: 1, rejectionIssues: 1 },
           $push: {
             approvalHistory: historyItem,
           },
         },
-        { new: true, runValidators: true },
+        // strict: false lets the $unset reach paths no longer in the schema
+        { new: true, runValidators: true, strict: false },
       )
         .populate('category', 'titleFa titleEn slug logo')
         .populate('brand', 'titleFa titleEn slug logo');

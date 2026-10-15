@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const rejectionReasonSchema = new mongoose.Schema(
+  {
+    property: { type: String, required: true, trim: true },
+    message: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
 const productSchema = new mongoose.Schema(
   {
     titleFa: {
@@ -156,32 +164,17 @@ const productSchema = new mongoose.Schema(
     },
 
     // Approval/Rejection fields
-    rejectionReason: {
-      propertyKeys: {
-        type: [String],
-        default: [],
-      },
-      message: {
-        type: String,
-        default: '',
-      },
-      rejectedAt: {
-        type: Date,
-      },
-      rejectedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Admin',
-      },
-    },
-
-    rejectionIssues: {
-      type: [
-        {
-          field: String,
-          message: String,
-        },
-      ],
+    // property is a dot path to the rejected field, e.g. titleFa or attributes.model
+    rejectionReasons: {
+      type: [rejectionReasonSchema],
       default: [],
+    },
+    rejectedAt: {
+      type: Date,
+    },
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
     },
 
     approvalHistory: {
@@ -205,17 +198,8 @@ const productSchema = new mongoose.Schema(
             type: String,
             default: '',
           },
-          field: {
-            type: String,
-            default: '',
-          },
-          issues: {
-            type: [
-              {
-                field: String,
-                message: String,
-              },
-            ],
+          rejectionReasons: {
+            type: [rejectionReasonSchema],
             default: [],
           },
         },

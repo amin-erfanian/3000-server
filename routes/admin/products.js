@@ -6,6 +6,7 @@ const authMiddleware = require('../../middlewares/authorization');
 const roleMiddleware = require('../../middlewares/role');
 const Product = require('../../models/product');
 const Seller = require('../../models/seller');
+const Variant = require('../../models/variant');
 
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin']));
@@ -74,6 +75,18 @@ router.get('/', async (req, res, next) => {
         .lean(),
       Product.countDocuments(filters),
     ]);
+
+    // count variants only for the products on this page (uses the variant.product index)
+    const variantCounts = await Variant.aggregate([
+      { $match: { product: { $in: items.map((item) => item._id) } } },
+      { $group: { _id: '$product', count: { $sum: 1 } } },
+    ]);
+    const countByProduct = new Map(
+      variantCounts.map(({ _id, count }) => [String(_id), count]),
+    );
+    items.forEach((item) => {
+      item.variantsCount = countByProduct.get(String(item._id)) ?? 0;
+    });
 
     res.json({
       status: 'ok',
@@ -226,13 +239,59 @@ router.get('/:id', async (req, res, next) => {
 
 /**
  * @route   GET /api/admin/products/:productId/variants
- * @desc    Get all variants of a product (for viewing product's variants)
+ * @desc    Get a product with all of its variants (from every seller)
  * @access  Private (Admin)
  */
 router.get('/:productId/variants', async (req, res, next) => {
   try {
-    const result = await productService.getProductVariants(req.params.productId);
-    res.json(result);
+    const { productId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'شناسه محصول نامعتبر است',
+      });
+    }
+
+    const sellerFields = 'title phone code nationalId type logo contactInfo';
+
+    const [product, variants] = await Promise.all([
+      Product.findById(productId)
+        .populate('brand', 'titleFa titleEn slug logo')
+        .populate('category', 'titleFa titleEn slug commission')
+        .populate('createdBy', sellerFields)
+        .lean(),
+      Variant.find({ product: productId })
+        .populate({
+          path: 'product',
+          select: 'titleFa titleEn code images referencePrice status category brand',
+          populate: [
+            { path: 'category', select: 'titleFa titleEn slug commission' },
+            { path: 'brand', select: 'titleFa titleEn slug' },
+          ],
+        })
+        .populate('seller', sellerFields)
+        .populate('color')
+        .populate('warranty')
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
+
+    if (!product) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'محصول یافت نشد',
+      });
+    }
+
+    res.json({
+      status: 'ok',
+      data: {
+        product,
+        items: variants,
+        total_rows: variants.length,
+      },
+    });
   } catch (error) {
     next(error);
   }

@@ -29,9 +29,10 @@ const warrantySchema = new mongoose.Schema(
       front: String,
       back: String,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
+    status: {
+      type: String,
+      enum: ['pending', 'rejected', 'approved'],
+      default: 'pending',
     },
   },
   {

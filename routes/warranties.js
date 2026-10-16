@@ -5,12 +5,12 @@ const CustomError = require('../classes/custom-error');
 
 // GET all warranties
 router.get('/', async (req, res) => {
-  const { page = 1, limit = 50, isActive, search } = req.query;
+  const { page = 1, limit = 50, status, search } = req.query;
 
   const filter = {};
 
-  if (isActive !== undefined) {
-    filter.isActive = isActive === 'true';
+  if (status) {
+    filter.status = status;
   }
 
   if (search) {
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
 
 // POST create a warranty
 router.post('/', async (req, res) => {
-  const { name, nameEn, description, durationValue, durationUnit, isActive } = req.body;
+  const { name, nameEn, description, duration, images } = req.body;
 
   if (!name) {
     throw new CustomError(400, 'BAD_REQUEST', {
@@ -51,10 +51,15 @@ router.post('/', async (req, res) => {
     nameEn: nameEn || '',
     description: description || '',
     duration: {
-      value: durationValue !== undefined ? parseInt(durationValue) : 0,
-      unit: durationUnit || 'day',
+      value: duration?.value !== undefined ? parseInt(duration.value) : 0,
+      unit: duration?.unit || 'month',
     },
-    isActive: isActive !== undefined ? isActive : true,
+    images: {
+      front: images?.front || '',
+      back: images?.back || '',
+    },
+    // Seller-created warranties wait for admin approval
+    status: 'pending',
   });
 
   await warranty.save();

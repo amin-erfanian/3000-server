@@ -85,7 +85,7 @@ async function seedWarranties() {
         continue;
       }
 
-      await Warranty.create({ ...warranty, isActive: true });
+      await Warranty.create({ ...warranty, status: 'approved' });
       console.log(`✓ ${warranty.name}`);
     }
 

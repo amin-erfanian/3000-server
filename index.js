@@ -77,6 +77,7 @@ const adminCategoryRoutes = require('./routes/admin/categories');
 const adminAttributeRoutes = require('./routes/admin/attributes');
 const adminProcessRuleRoutes = require('./routes/admin/process-rule');
 const adminWarrantyRoutes = require('./routes/admin/warranties');
+const adminStorageRoutes = require('./routes/admin/storage');
 
 app.use('/admin/products', adminProductRoutes);
 app.use('/admin/variants', adminVariantRoutes);
@@ -84,6 +85,7 @@ app.use('/admin/categories', adminCategoryRoutes);
 app.use('/admin/attributes', adminAttributeRoutes);
 app.use('/admin/process-rules', adminProcessRuleRoutes);
 app.use('/admin/warranties', adminWarrantyRoutes);
+app.use('/admin/storage', adminStorageRoutes);
 
 app.use(errorHandlerMiddleware);
 

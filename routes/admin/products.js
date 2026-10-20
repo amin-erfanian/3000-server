@@ -7,6 +7,9 @@ const roleMiddleware = require('../../middlewares/role');
 const Product = require('../../models/product');
 const Seller = require('../../models/seller');
 const Variant = require('../../models/variant');
+const SellerProduct = require('../../models/seller-product');
+const Review = require('../../models/review');
+const User = require('../../models/user');
 
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin']));
@@ -22,6 +25,7 @@ router.get('/', async (req, res, next) => {
       title,
       phone,
       status,
+      keyword,
     } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
@@ -40,6 +44,13 @@ router.get('/', async (req, res, next) => {
       }
 
       filters.status = { $in: statuses };
+    }
+
+    const search = typeof keyword === 'string' ? keyword.trim() : '';
+    if (search) {
+      // Escape regex special chars so the keyword is matched literally
+      const regex = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+      filters.$or = [{ titleFa: regex }, { titleEn: regex }, { description: regex }, { code: regex }];
     }
 
     if (code || title || phone) {
@@ -291,6 +302,48 @@ router.get('/:productId/variants', async (req, res, next) => {
         items: variants,
         total_rows: variants.length,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   DELETE /api/admin/products/:productId
+ * @desc    Delete a product entirely, with its variants and everything referencing it
+ * @access  Private (Admin)
+ */
+router.delete('/:productId', async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'شناسه محصول نامعتبر است',
+      });
+    }
+
+    const product = await Product.findByIdAndDelete(productId).lean();
+
+    if (!product) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'محصول یافت نشد',
+      });
+    }
+
+    const [variants] = await Promise.all([
+      Variant.deleteMany({ product: productId }),
+      SellerProduct.deleteMany({ product: productId }),
+      Review.deleteMany({ product: productId }),
+      User.updateMany({ favorites: productId }, { $pull: { favorites: productId } }),
+    ]);
+
+    res.json({
+      status: 'ok',
+      data: { productId, deletedVariants: variants.deletedCount },
+      message: 'کالا با موفقیت حذف شد',
     });
   } catch (error) {
     next(error);

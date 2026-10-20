@@ -1,7 +1,9 @@
 // routes/admin/variant.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const variantService = require('../../services/variant.service');
+const Variant = require('../../models/variant');
 const adminAuth = require('../../middlewares/authorization');
 const roleMiddleware = require('../../middlewares/role');
 
@@ -46,6 +48,44 @@ router.get('/:variantId', async (req, res) => {
     res.json({
       status: 'ok',
       data: variant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/admin/variants/:variantId
+ * Delete a single variant
+ * Params: variantId
+ */
+router.delete('/:variantId', async (req, res) => {
+  try {
+    const { variantId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(variantId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'شناسه تنوع نامعتبر است',
+      });
+    }
+
+    const variant = await Variant.findByIdAndDelete(variantId).lean();
+
+    if (!variant) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'تنوع یافت نشد',
+      });
+    }
+
+    res.json({
+      status: 'ok',
+      data: { variantId },
+      message: 'تنوع با موفقیت حذف شد',
     });
   } catch (error) {
     res.status(500).json({

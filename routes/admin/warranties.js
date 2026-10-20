@@ -11,16 +11,23 @@ router.use(roleMiddleware(['admin']));
 
 /**
  * @route   GET /api/admin/warranties
- * @desc    List warranties, optionally filtered by status
+ * @desc    List warranties, optionally filtered by status and searched by name, nameEn and description
  * @access  Private (Admin)
  */
 router.get('/', async (req, res) => {
-  const { page = 1, limit = 20, status } = req.query;
+  const { page = 1, limit = 20, status, search } = req.query;
 
   const pageNum = parseInt(page, 10) || 1;
   const limitNum = parseInt(limit, 10) || 20;
   const skip = (pageNum - 1) * limitNum;
   const filters = status ? { status } : {};
+
+  const keyword = typeof search === 'string' ? search.trim() : '';
+  if (keyword) {
+    // Escape regex special chars so the keyword is matched literally
+    const regex = { $regex: keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+    filters.$or = [{ name: regex }, { nameEn: regex }, { description: regex }];
+  }
 
   const [items, total_rows] = await Promise.all([
     Warranty.find(filters).sort({ createdAt: -1 }).skip(skip).limit(limitNum).lean(),
@@ -39,6 +46,39 @@ router.get('/', async (req, res) => {
       items,
     },
   });
+});
+
+/**
+ * @route   POST /api/admin/warranties
+ * @desc    Create a warranty (admin-created warranties are approved immediately)
+ * @access  Private (Admin)
+ */
+router.post('/', async (req, res) => {
+  const { name, nameEn, description, duration, images } = req.body;
+
+  if (!name) {
+    throw new CustomError(400, 'BAD_REQUEST', {
+      fa: 'عنوان فارسی الزامی است.',
+      en: 'Farsi title is required.',
+    });
+  }
+
+  const warranty = await Warranty.create({
+    name,
+    nameEn: nameEn || '',
+    description: description || '',
+    duration: {
+      value: duration?.value !== undefined ? parseInt(duration.value, 10) || 0 : 0,
+      unit: duration?.unit || 'month',
+    },
+    images: {
+      front: images?.front || '',
+      back: images?.back || '',
+    },
+    status: 'approved',
+  });
+
+  res.status(201).json({ status: 'ok', data: warranty });
 });
 
 const updatePendingStatus = async (warrantyId, status) => {

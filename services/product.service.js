@@ -84,7 +84,7 @@ class ProductService {
       }
 
       const product = await Product.findById(id)
-        .populate('category', '_id titleFa titleEn slug')
+        .populate('category', '_id titleFa titleEn slug commission')
         .populate('brand', '_id titleFa titleEn slug logo')
         .lean();
 

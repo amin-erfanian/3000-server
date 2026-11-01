@@ -376,7 +376,7 @@ router.put('/:productId', async (req, res, next) => {
       sku,
       dimensions,
       weight,
-      referencePrice = 0,
+      referencePrice,
       commission,
       images,
       videos,

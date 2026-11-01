@@ -9,6 +9,19 @@ const roleMiddleware = require('../../middlewares/role');
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin']));
 
+const validatePublicIds = (publicIds) => {
+  const isValid =
+    Array.isArray(publicIds) &&
+    publicIds.every((publicId) => publicId?.id && publicId.description?.trim());
+
+  if (!isValid) {
+    throw new CustomError(400, 'VALIDATION_ERROR', {
+      fa: 'شناسه و توضیحات هر شناسه عمومی الزامی است.',
+      en: 'Each public id requires an id and a description.',
+    });
+  }
+};
+
 // POST create new category
 router.post('/', async (req, res) => {
   const { titleFa, titleEn, slug, parent, image, returnReasonAlert, isActive, commission, publicIds } =
@@ -20,6 +33,8 @@ router.post('/', async (req, res) => {
       en: 'Persian title and slug are required.',
     });
   }
+
+  if (publicIds !== undefined) validatePublicIds(publicIds);
 
   // Check if slug already exists
   const existingCategory = await Category.findOne({ slug });
@@ -76,6 +91,8 @@ router.put('/:id', async (req, res) => {
     commission,
     publicIds,
   } = req.body;
+
+  if (publicIds !== undefined) validatePublicIds(publicIds);
 
   const category = await Category.findById(req.params.id);
 

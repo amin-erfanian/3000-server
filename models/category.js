@@ -34,7 +34,19 @@ const categorySchema = new mongoose.Schema(
       default: 0,
     },
     publicIds: {
-      type: [String],
+      type: [
+        {
+          _id: false,
+          id: {
+            type: String,
+            required: true,
+          },
+          description: {
+            type: String,
+            default: '',
+          },
+        },
+      ],
       default: [],
     },
     attributes: {

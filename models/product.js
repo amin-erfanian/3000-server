@@ -46,7 +46,7 @@ const productSchema = new mongoose.Schema(
       ref: 'Brand',
       index: true,
     },
-    sku: {
+    pid: {
       type: String,
       default: '',
       index: true,

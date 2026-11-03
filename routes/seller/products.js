@@ -153,6 +153,7 @@ router.get('/catalog', async (req, res) => {
         {
           $project: {
             _id: 1,
+            code: 1,
             titleFa: 1,
             titleEn: 1,
             'images.main': 1,
@@ -194,6 +195,7 @@ router.get('/catalog', async (req, res) => {
         },
         items: items.map((p) => ({
           id: p._id,
+          code: p.code,
           title: p.titleFa || p.titleEn || '',
           image_src: p.images?.main || null,
           brand: p.brand,

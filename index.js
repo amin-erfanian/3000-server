@@ -32,7 +32,7 @@ db.once('open', () => {
 const authMiddleware = require('./middlewares/authorization');
 
 // Auth routes
-const buyerAuthRoutes = require('./routes/authentication');
+const buyerAuthRoutes = require('./routes/buyer/authentication');
 const sellerAuthRoutes = require('./routes/seller/authentication');
 const adminAuthRoutes = require('./routes/admin/authentication');
 

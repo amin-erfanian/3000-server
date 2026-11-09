@@ -4,29 +4,14 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../../models/user');
-const VerificationCode = require('../../models/verification-code');
-const { generateCode } = require('../../utilities/generate-code');
 const CustomError = require('../../classes/custom-error');
 const logger = require('../../classes/custom-logger');
 const { setAuthCookie } = require('../../utilities/auth');
 const authMiddleware = require('../../middlewares/authorization');
 const role = require('../../middlewares/role');
+const { requirePhone, normalizePhone, issueOtp, verifyOtp } = require('../../helpers/otp');
 
 const PANEL = 'user';
-const OTP_TTL_SECONDS = 3 * 60;
-const MAX_OTP_ATTEMPTS = 5;
-
-// Accepts Persian/Arabic digits and +98 / 0098 / 98 prefixes, returns 09xxxxxxxxx or null
-const normalizePhone = (value) => {
-  const phone = String(value ?? '')
-    .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .replace(/[\s-]/g, '')
-    .replace(/^(\+98|0098|98)/, '0')
-    .replace(/^9/, '09');
-
-  return /^09\d{9}$/.test(phone) ? phone : null;
-};
 
 const toPublicUser = (user) => ({
   _id: user._id,
@@ -37,16 +22,11 @@ const toPublicUser = (user) => ({
 
 /**
  * @route   POST /auth/send-otp
- * @desc    Create a login/signup OTP for a phone number (returned in the response until SMS is wired up)
+ * @desc    Create a login/signup OTP for a phone number and send it by SMS
  * @access  Public
  */
 router.post('/send-otp', async (req, res) => {
-  const phone = normalizePhone(req.body.phone);
-  if (!phone)
-    throw new CustomError(400, 'INVALID_PHONE', {
-      fa: 'شماره همراه معتبر نیست.',
-      en: 'Phone number is invalid.',
-    });
+  const phone = requirePhone(req.body.phone);
 
   const user = await User.findOne({ phone }).select('status');
   if (user && user.status !== 'active')
@@ -55,21 +35,13 @@ router.post('/send-otp', async (req, res) => {
       en: 'Your account is not active.',
     });
 
-  await VerificationCode.deleteOne({ phone, panel: PANEL });
-  const code = generateCode();
-  await VerificationCode.create({
-    phone,
-    code,
-    expiresAt: new Date(Date.now() + OTP_TTL_SECONDS * 1000),
-    panel: PANEL,
-  });
+  const otp = await issueOtp({ phone, panel: PANEL });
 
   res.status(200).json({
     message: 'کد تایید به شماره همراه شما ارسال شد.',
     phone,
-    code,
-    expiresIn: OTP_TTL_SECONDS,
     isNew: !user,
+    ...otp,
   });
 });
 
@@ -80,29 +52,7 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   const phone = normalizePhone(req.body.phone);
-  const enteredCode = String(req.body.code ?? '').trim();
-  const record = phone && (await VerificationCode.findOne({ phone, panel: PANEL }));
-
-  if (!record || record.expiresAt < Date.now())
-    throw new CustomError(400, 'INVALID_OTP', {
-      fa: 'کد منقضی شده یا معتبر نیست.',
-      en: 'OTP is invalid or expired.',
-    });
-
-  if (record.code !== enteredCode) {
-    record.attempts += 1;
-    if (record.attempts >= MAX_OTP_ATTEMPTS) {
-      await VerificationCode.deleteOne({ _id: record._id });
-      throw new CustomError(400, 'TOO_MANY_ATTEMPTS', {
-        fa: 'تعداد تلاش‌ها بیش از حد مجاز است. لطفا دوباره کد دریافت کنید.',
-        en: 'Too many attempts. Please request a new code.',
-      });
-    }
-    await record.save();
-    throw new CustomError(400, 'WRONG_OTP', { fa: 'کد وارد شده اشتباه است.', en: 'OTP is incorrect.' });
-  }
-
-  await VerificationCode.deleteOne({ _id: record._id });
+  await verifyOtp({ phone, panel: PANEL, code: req.body.code });
 
   let user = await User.findOne({ phone });
   let isNew = false;

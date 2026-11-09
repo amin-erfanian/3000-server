@@ -16,6 +16,9 @@ const VerificationCodeSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    sentAt: {
+      type: Date,
+    },
     expiresAt: {
       type: Date,
       required: true,
@@ -35,5 +38,7 @@ const VerificationCodeSchema = new mongoose.Schema(
 );
 
 VerificationCodeSchema.index({ phone: 1, panel: 1 }, { unique: true });
+// Mongo removes expired codes on its own (checked about once a minute)
+VerificationCodeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('VerificationCode', VerificationCodeSchema);

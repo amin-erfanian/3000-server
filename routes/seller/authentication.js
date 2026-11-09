@@ -3,46 +3,33 @@ const router = express.Router();
 const Seller = require('../../models/seller');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const VerificationCode = require('../../models/verification-code');
-const { generateCode } = require('../../utilities/generate-code');
 const CustomError = require('../../classes/custom-error');
 const logger = require('../../classes/custom-logger');
 const { setAuthCookie } = require('../../utilities/auth');
+const { requirePhone, normalizePhone, issueOtp, verifyOtp } = require('../../helpers/otp');
 
+const PANEL = 'seller';
+
+/**
+ * @route   POST /seller/auth/send-otp
+ * @desc    Create a login/signup OTP for a phone number and send it by SMS
+ * @access  Public
+ */
 router.post('/send-otp', async (req, res) => {
-  const { phone } = req.body;
-  if (!phone)
-    throw new CustomError(400, 'MISSING_PHONE', {
-      fa: 'شماره همراه الزامی است.',
-      en: 'Phone number is required.',
-    });
+  const phone = requirePhone(req.body.phone);
+  const otp = await issueOtp({ phone, panel: PANEL });
 
-  await VerificationCode.deleteOne({ phone, panel: 'seller' });
-  const code = generateCode();
-  await VerificationCode.create({
-    phone,
-    code,
-    expiresAt: new Date(Date.now() + 3 * 60 * 1000),
-    panel: 'seller',
-  });
-
-  res.status(200).json({ message: 'کد تایید به شماره همراه شما ارسال شد.', code, panel: 'seller' });
+  res.status(200).json({ message: 'کد تایید به شماره همراه شما ارسال شد.', phone, panel: PANEL, ...otp });
 });
 
+/**
+ * @route   POST /seller/auth/verify-otp
+ * @desc    Verify the OTP, create the seller on first login and set the auth cookie
+ * @access  Public
+ */
 router.post('/verify-otp', async (req, res) => {
-  const { phone, code: enteredCode } = req.body;
-  const record = await VerificationCode.findOne({ phone, panel: 'seller' });
-
-  if (!record || record.expiresAt < Date.now())
-    throw new CustomError(400, 'INVALID_OTP', {
-      fa: 'کد منقضی شده یا معتبر نیست.',
-      en: 'OTP is invalid or expired.',
-    });
-
-  if (enteredCode !== 12345 && record.code !== enteredCode)
-    throw new CustomError(400, 'WRONG_OTP', { fa: 'کد وارد شده اشتباه است.', en: 'OTP is incorrect.' });
-
-  await VerificationCode.deleteOne({ phone, panel: 'seller' });
+  const phone = normalizePhone(req.body.phone);
+  await verifyOtp({ phone, panel: PANEL, code: req.body.code });
 
   let account = await Seller.findOne({ phone });
   let isNew = false;
@@ -62,53 +49,53 @@ router.post('/verify-otp', async (req, res) => {
     expiresIn: '7d',
   });
   setAuthCookie(res, token);
-  res.status(isNew ? 201 : 200).json({ isNew, panel: 'seller', profile: account.profile ?? {} });
+  res.status(isNew ? 201 : 200).json({ isNew, panel: PANEL, profile: account.profile ?? {} });
 });
 
+/**
+ * @route   POST /seller/auth/forget-password
+ * @desc    Send an OTP by SMS for resetting the password
+ * @access  Public
+ */
 router.post('/forget-password', async (req, res) => {
-  const { phone } = req.body;
-  const seller = await Seller.findOne({ phone });
+  const phone = requirePhone(req.body.phone);
+  const seller = await Seller.findOne({ phone }).select('_id');
   if (!seller)
     throw new CustomError(400, 'USER_NOT_FOUND', {
       fa: 'کاربری با این شماره همراه یافت نشد.',
       en: 'User not found.',
     });
 
-  await VerificationCode.deleteOne({ phone, panel: 'seller' });
-  const code = generateCode();
-  await VerificationCode.create({
-    phone,
-    code,
-    expiresAt: new Date(Date.now() + 3 * 60 * 1000),
-    panel: 'seller',
-  });
+  const otp = await issueOtp({ phone, panel: PANEL });
 
-  res.status(200).json({ message: 'کد تایید برای تغییر کلمه عبور به شماره همراه شما ارسال شد.' });
+  res.status(200).json({ message: 'کد تایید برای تغییر کلمه عبور به شماره همراه شما ارسال شد.', ...otp });
 });
 
+/**
+ * @route   POST /seller/auth/reset-password
+ * @desc    Verify the OTP and set a new password
+ * @access  Public
+ */
 router.post('/reset-password', async (req, res) => {
-  const { phone, code: enteredCode, password: newPassword } = req.body;
-  const record = await VerificationCode.findOne({ phone, panel: 'seller' });
-
-  if (!record || record.expiresAt < Date.now())
-    throw new CustomError(400, 'INVALID_OTP', {
-      fa: 'کد منقضی شده یا معتبر نیست.',
-      en: 'OTP is invalid or expired.',
+  const phone = normalizePhone(req.body.phone);
+  const { password: newPassword } = req.body;
+  if (!newPassword)
+    throw new CustomError(400, 'MISSING_PASSWORD', {
+      fa: 'رمز عبور جدید الزامی است.',
+      en: 'New password is required.',
     });
 
-  if (record.code !== enteredCode)
-    throw new CustomError(400, 'WRONG_OTP', { fa: 'کد وارد شده اشتباه است.', en: 'OTP is incorrect.' });
-
-  const seller = await Seller.findOne({ phone });
+  const seller = phone && (await Seller.findOne({ phone }));
   if (!seller)
     throw new CustomError(400, 'USER_NOT_FOUND', {
       fa: 'کاربری با این شماره همراه یافت نشد.',
       en: 'User not found.',
     });
 
-  seller.password = await bcrypt.hash(newPassword, await bcrypt.genSalt(10));
+  await verifyOtp({ phone, panel: PANEL, code: req.body.code });
+
+  seller.password = await bcrypt.hash(String(newPassword), await bcrypt.genSalt(10));
   await seller.save();
-  await VerificationCode.deleteOne({ phone, panel: 'seller' });
 
   res.status(200).json({ message: 'رمز عبور با موفقیت تغییر یافت.' });
 });
